@@ -57,7 +57,7 @@ def get_sp500_yield():
 #金利上昇スパイク判定（30日間で30〜50bpの上昇があったか）
 def rate_spike_recent(rates_df):
     recent = rates_df['Close'].iloc[-30:]
-    delta = recent.iloc[-1] - recent.iloc[0]
+    delta = float(recent.iloc[-1] - recent.iloc[0])  # ← 明示的に float 化
     return 30 <= delta <= 50
 
 # ──────────── 押し目判定関数 ────────────
