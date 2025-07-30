@@ -1,7 +1,5 @@
-streamlit
-yfinance
+# requirements.txt に以下のように追記
 pandas
-ta
-gspread
-oauth2client
-requests
+pandas_ta
+yfinance
+streamlit
