@@ -121,7 +121,11 @@ for symbol in symbols:
 available_cols = ['Close', 'MA50', 'MA200', 'LowerBand', 'UpperBand']
 plot_cols = [col for col in available_cols if col in df.columns and df[col].notna().any()]
 
-if plot_cols:
-    st.line_chart(df[plot_cols])
-else:
-    st.warning("チャートに表示できるデータが不足しています。")
+plot_cols = []
+for col in available_cols:
+    if col in df.columns:
+        try:
+            if bool(df[col].notna().any()):
+                plot_cols.append(col)
+        except Exception as e:
+            st.warning(f"{col} の評価時にエラー: {e}")
