@@ -106,9 +106,10 @@ for symbol in symbols.keys():
 
     df = yf.download(symbol, period='6mo', interval='1d').dropna()
 
-    if df.empty or df['Close'].isnull().all():
+    if (df.empty) or (df['Close'].isnull().all()):
         st.error(f"{symbol} のデータが取得できませんでした。")
         continue
+
 
     # 指標計算
     df['RSI'] = compute_rsi(df['Close'])
