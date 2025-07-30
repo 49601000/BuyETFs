@@ -40,7 +40,7 @@ def get_dividend_yield(symbol):
     try:
         ticker = yf.Ticker(symbol)
         info = ticker.info
-        return round(info.get('dividendYield', 0) * 100, 2)
+        return round(info.get('dividendYield', 0), 2)
     except Exception as e:
         print(f"利回り取得エラー: {e}")
         return '取得不可'
