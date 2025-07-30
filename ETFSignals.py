@@ -111,11 +111,11 @@ for symbol in symbols.keys():
 
     if df.empty:
         st.error(f"{symbol} のデータが取得できませんでした。")
-    continue
+        continue
 
     if df['Close'].isnull().all():
         st.warning(f"{symbol} の Close データが全て欠損しています。")
-    continue
+        continue
 
     
     # 指標計算
