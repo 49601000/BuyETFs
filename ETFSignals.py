@@ -1,123 +1,114 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import yfinance as yf
 
+st.set_page_config(page_title="ETF再投資判定", page_icon="📊")
 st.title("📊 ETF再投資判定")
 
+# --- 設定 ---
 symbols = {'VYM': 'NYSE', 'JEPQ': 'NASDAQ', 'JEPI': 'NYSE', 'TLT': 'NYSE'}
 
-#マクロ指標取得
-vxn_data = yf.download('^VIX', period='3mo', interval='1d')
+# --- マクロ指標取得 ---
+vix_data = yf.download('^VIX', period='3mo', interval='1d')
 rates_data = yf.download('^TNX', period='3mo', interval='1d')
-rate_latest = float(rates_data['Close'].iloc[-1])
+rate_latest = float(rates_data['Close'].dropna().iloc[-1])
 
-#指標計算関数
-#RSI
+# --- 指標計算関数 ---
 def compute_rsi(series, period=14):
     delta = series.diff()
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
-
-    avg_gain = gain.rolling(window=period).mean()
-    avg_loss = loss.rolling(window=period).mean()
-
+    avg_gain = gain.rolling(period).mean()
+    avg_loss = loss.rolling(period).mean()
     rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
-    return rsi
+    return 100 - (100 / (1 + rs))
 
-#ボリンジャーバンド（1δ）
 def compute_bollinger_bands(series, period=20, num_std=2):
-    sma = series.rolling(window=period).mean()
-    std = series.rolling(window=period).std()
+    sma = series.rolling(period).mean()
+    std = series.rolling(period).std()
+    upper = sma + (num_std * std)
+    lower = sma - (num_std * std)
+    return upper, lower
 
-    upper_band = sma + num_std * std
-    lower_band = sma - num_std * std
-    return upper_band, lower_band
-
-#分配金利回り関数
 def get_dividend_yield(symbol):
     try:
         ticker = yf.Ticker(symbol)
         info = ticker.info
-        return round(info.get('dividendYield', 0), 2)
+        dy = info.get('dividendYield', None)
+        if dy is not None:
+            return round(dy * 100, 2)
+        else:
+            return None
     except Exception as e:
         print(f"利回り取得エラー: {e}")
-        return '取得不可'
-#SP500の分配金取得
+        return None
+
 def get_sp500_yield():
     try:
         ticker = yf.Ticker('^GSPC')
         info = ticker.info
-        return round(info.get('dividendYield', 0) * 100, 2)
+        dy = info.get('dividendYield', None)
+        if dy is not None:
+            return round(dy * 100, 2)
+        else:
+            return None
     except Exception as e:
         print(f"S&P500利回り取得エラー: {e}")
-        return '取得不可'
+        return None
 
-#金利上昇スパイク判定（30日間で30〜50bpの上昇があったか）
 def rate_spike_recent(rates_df):
-    recent = rates_df['Close'].iloc[-30:]
-    delta = float(recent.iloc[-1] - recent.iloc[0])  # ← 明示的に float 化
+    recent = rates_df['Close'].dropna().iloc[-30:]
+    if len(recent) < 30:
+        return False
+    delta = float(recent.iloc[-1] - recent.iloc[0])
     return 30 <= delta <= 50
 
-# ──────────── 押し目判定関数 ────────────
 def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data):
     latest = df.iloc[-1]
-    close = float(latest['Close'])
-    rsi = float(latest['RSI'])
-    ma50 = float(df['Close'].rolling(50).mean().iloc[-1])
-    ma200 = float(df['Close'].rolling(200).mean().iloc[-1])
+    close = latest['Close']
+    rsi = latest['RSI']
+    ma50 = latest['MA50']
+    ma200 = latest['MA200']
     deviation_pct = ((ma50 - close) / ma50) * 100
 
-    cond_sp_vs_rate = isinstance(sp500_yield, float) and sp500_yield > rate_latest
+    cond_sp_vs_rate = isinstance(sp500_yield, (int, float)) and sp500_yield > rate_latest
 
     if symbol == 'VYM':
-        cond_rsi = bool(rsi < 40)
-        cond_ma = bool(close <= ma200)
-        cond_rate = isinstance(yield_pct, float) and (1.0 <= (yield_pct - rate_latest) <= 1.5)
-        if cond_rsi or cond_ma or cond_rate:
+        cond = (rsi < 40) or (close <= ma200) or (
+            isinstance(yield_pct, (int, float)) and (1.0 <= (yield_pct - rate_latest) <= 1.5))
+        if cond:
             return '🔔 押し目買いチャンス'
-
     elif symbol == 'JEPQ':
-        cond_rsi = bool(rsi < 35)
-        cond_ma = bool(5 <= deviation_pct <= 10)
-        if cond_rsi or cond_ma:
+        cond = (rsi < 35) or (5 <= deviation_pct <= 10)
+        if cond:
             return '🔔 押し目買いチャンス'
-
     elif symbol == 'JEPI':
-        cond_rsi = bool(rsi < 40)
-        cond_ma = bool(close <= ma200)
-        if cond_rsi or cond_ma or cond_sp_vs_rate:
+        cond = (rsi < 40) or (close <= ma200) or cond_sp_vs_rate
+        if cond:
             return '🔔 押し目買いチャンス'
-
     elif symbol == 'TLT':
-        cond_rsi = bool(rsi < 35)
-        cond_ma = bool(close <= ma200)
-        cond_spike = bool(rate_spike_recent(rates_data))
-        if cond_rsi or cond_ma or cond_spike:
+        cond = (rsi < 35) or (close <= ma200) or rate_spike_recent(rates_data)
+        if cond:
             return '🔔 押し目買いチャンス'
-
     return '⏸ 様子見'
 
-# ──────────── S&P500利回り取得 ────────────
+# --- S&P500利回り ---
 sp500_yield = get_sp500_yield()
+if sp500_yield:
+    st.write(f"📰 **S&P500分配金利回り**：{sp500_yield} %")
+else:
+    st.warning("S&P500の分配金利回りを取得できませんでした。")
 
-# ──────────── メイン処理 ────────────
+# --- メイン処理 ---
 for symbol in symbols.keys():
     st.subheader(f"🔎 {symbol}")
 
-    # データ取得と空チェック
-    df = yf.download(symbol, period='6mo', interval='1d')
+    df = yf.download(symbol, period='6mo', interval='1d').dropna()
 
-    if df.empty:
+    if df.empty or df['Close'].isnull().all():
         st.error(f"{symbol} のデータが取得できませんでした。")
         continue
 
-    if df['Close'].isnull().all():
-        st.warning(f"{symbol} の Close データが全て欠損しています。")
-        continue
-
-    
     # 指標計算
     df['RSI'] = compute_rsi(df['Close'])
     df['UpperBand'], df['LowerBand'] = compute_bollinger_bands(df['Close'])
@@ -126,10 +117,9 @@ for symbol in symbols.keys():
     df['MA200'] = df['Close'].rolling(200).mean()
     df.dropna(inplace=True)
 
-    # 最新値取得
     latest = df.iloc[-1]
-    price = float(latest['Close'])
-    rsi = float(latest['RSI'])
+    price = latest['Close']
+    rsi = latest['RSI']
 
     # BB判定
     if price > latest['UpperBand']:
@@ -141,10 +131,10 @@ for symbol in symbols.keys():
 
     # 分配金利回り
     yield_pct = get_dividend_yield(symbol)
-    if isinstance(yield_pct, float):
-        st.markdown(f"**分配金利回り**：{yield_pct} %")
+    if yield_pct:
+        st.write(f"**分配金利回り**：{yield_pct} %")
     else:
-        st.warning(f"**分配金利回りの取得に失敗しました：{yield_pct}**")
+        st.warning("分配金利回りを取得できませんでした。")
 
     # 指標表示
     st.write(f"📌 Close価格：{round(price,2)}")
@@ -154,8 +144,6 @@ for symbol in symbols.keys():
     st.write(f"📊 RSI：{round(rsi,2)}")
     st.write(f"📊 ボリンジャーバンド判定：**{bb_status}**")
 
-    # 判定ロジック
+    # 判定
     signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data)
     st.markdown(f"### 判定結果：{signal}")
-
-
