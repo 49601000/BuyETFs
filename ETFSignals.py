@@ -58,7 +58,7 @@ def rate_spike_recent(rates_df):
     return 30 <= delta <= 50
 
 # ──────────── 押し目判定ロジック ────────────
-def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data):
+    signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data)  
     latest = df.iloc[-1]
     close = float(latest['Close'])
     rsi = float(latest['RSI'])
