@@ -114,6 +114,8 @@ for symbol in symbols:
 
     yield_pct = get_dividend_yield(symbol)
     st.markdown(f"**分配金利回り**：{yield_pct} %")
+    st.line_chart(df[['Close', 'BB_upper', 'BB_middle', 'BB_lower']])
+    st.line_chart(df['RSI'])
 
     signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data)
     st.markdown(f"### 判定結果：{signal}")
