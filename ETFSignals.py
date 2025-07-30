@@ -5,7 +5,7 @@ import yfinance as yf
 
 st.title("📊 ETF再投資判定")
 
-symbols = {'VYM': 'NYSE', 'JEPQ': 'NASDAQ', 'JEPI': 'NYSE', 'TLT': 'NYSE'}
+symbols = {'VYM': 'NYSE', 'JEPQ': 'NASDAQ', 'T': 'NYSE', 'TLT': 'NYSE'}
 
 #マクロ指標取得
 vxn_data = yf.download('^VIX', period='3mo', interval='1d')
@@ -84,7 +84,7 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data):
         if cond_rsi or cond_ma:
             return '🔔 押し目買いチャンス'
 
-    elif symbol == 'JEPI':
+    elif symbol == 'T':
         cond_rsi = bool(rsi < 40)
         cond_ma = bool(close <= ma200)
         if cond_rsi or cond_ma or cond_sp_vs_rate:
