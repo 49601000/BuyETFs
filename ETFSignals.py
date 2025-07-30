@@ -120,8 +120,6 @@ for symbol in symbols:
 
 available_cols = ['Close', 'MA50', 'MA200', 'LowerBand', 'UpperBand']
 plot_cols = [col for col in available_cols if col in df.columns and df[col].notna().any()]
-
-plot_cols = []
 for col in available_cols:
     if col in df.columns:
         try:
