@@ -112,13 +112,44 @@ for symbol in symbols:
     df['MA50'] = df['Close'].rolling(50).mean()
     df['MA200'] = df['Close'].rolling(200).mean()
 
-    yield_pct = get_dividend_yield(symbol)
-    st.markdown(f"**分配金利回り**：{yield_pct} %")
-    st.write(f"📌 Close価格：{round(price,2)}")
-    st.write(f"📈 20日移動平均：{round(latest['MA_20'],2)}")
-    st.write(f"📉 50日移動平均：{round(latest['MA_50'],2)}")
-    st.write(f"📊 RSI：**{rsi}**")
-    st.write(f"📊 ボリンジャーバンド判定：**{bb_status}**")
+   st.subheader(f"🔎 {symbol}")
 
-    signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data)
-    st.markdown(f"### 判定結果：{signal}")
+# データ取得
+df = yf.download(symbol, period='6mo', interval='1d')
+df['RSI'] = compute_rsi(df['Close'])
+df['UpperBand'], df['LowerBand'] = compute_bollinger_bands(df['Close'])
+df['MA20'] = df['Close'].rolling(20).mean()  # ← 20MA を忘れず追加
+df['MA50'] = df['Close'].rolling(50).mean()
+df['MA200'] = df['Close'].rolling(200).mean()
+df.dropna(inplace=True)  # 欠損除去
+
+# 最新値取得
+latest = df.iloc[-1]
+price = latest['Close']
+rsi = latest['RSI']
+
+# ボリンジャーバンド判定
+if price > latest['UpperBand']:
+    bb_status = "上抜け（買われ過ぎ）"
+elif price < latest['LowerBand']:
+    bb_status = "下抜け（売られ過ぎ）"
+else:
+    bb_status = "バンド内"
+
+# 分配金利回り
+yield_pct = get_dividend_yield(symbol)
+if isinstance(yield_pct, float):
+    st.markdown(f"**分配金利回り**：{yield_pct} %")
+else:
+    st.warning(f"**分配金利回りの取得に失敗しました：{yield_pct}**")
+
+# 指標の表示
+st.write(f"📌 Close価格：{round(price,2)}")
+st.write(f"📈 20日移動平均：{round(latest['MA20'],2)}")
+st.write(f"📉 50日移動平均：{round(latest['MA50'],2)}")
+st.write(f"📉 200日移動平均：{round(latest['MA200'],2)}")
+st.write(f"📊 RSI：{round(rsi,2)}")
+st.write(f"📊 ボリンジャーバンド判定：**{bb_status}**")
+
+signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data)
+st.markdown(f"### 判定結果：{signal}")
