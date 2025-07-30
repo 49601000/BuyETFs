@@ -103,39 +103,36 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data):
 sp500_yield = get_sp500_yield()
 
 # ──────────── メイン処理 ────────────
-for symbol in symbols:
+for symbol in symbols.keys():
     st.subheader(f"🔎 {symbol}")
 
+    # データ取得と空チェック
     df = yf.download(symbol, period='6mo', interval='1d')
-    df['RSI'] = compute_rsi(df['Close'])
-    df['UpperBand'], df['LowerBand'] = compute_bollinger_bands(df['Close'])
-    df['MA50'] = df['Close'].rolling(50).mean()
-    df['MA200'] = df['Close'].rolling(200).mean()
+    if df.empty or df['Close'].isnull().all():
+        st.error(f"{symbol} の株価データが取得できませんでした。")
+        continue
 
-    st.subheader(f"🔎 {symbol}")
-    
-    # データ取得
-    df = yf.download(symbol, period='6mo', interval='1d')
+    # 指標計算
     df['RSI'] = compute_rsi(df['Close'])
     df['UpperBand'], df['LowerBand'] = compute_bollinger_bands(df['Close'])
-    df['MA20'] = df['Close'].rolling(20).mean()  # ← 20MA を忘れず追加
+    df['MA20'] = df['Close'].rolling(20).mean()
     df['MA50'] = df['Close'].rolling(50).mean()
     df['MA200'] = df['Close'].rolling(200).mean()
-    df.dropna(inplace=True)  # 欠損除去
-    
+    df.dropna(inplace=True)
+
     # 最新値取得
     latest = df.iloc[-1]
-    price = latest['Close']
-    rsi = latest['RSI']
-    
-    # ボリンジャーバンド判定
+    price = float(latest['Close'])
+    rsi = float(latest['RSI'])
+
+    # BB判定
     if price > latest['UpperBand']:
         bb_status = "上抜け（買われ過ぎ）"
     elif price < latest['LowerBand']:
         bb_status = "下抜け（売られ過ぎ）"
     else:
         bb_status = "バンド内"
-        
+
     # 分配金利回り
     yield_pct = get_dividend_yield(symbol)
     if isinstance(yield_pct, float):
@@ -143,14 +140,16 @@ for symbol in symbols:
     else:
         st.warning(f"**分配金利回りの取得に失敗しました：{yield_pct}**")
 
-    # 指標の表示
+    # 指標表示
     st.write(f"📌 Close価格：{round(price,2)}")
     st.write(f"📈 20日移動平均：{round(latest['MA20'],2)}")
     st.write(f"📉 50日移動平均：{round(latest['MA50'],2)}")
     st.write(f"📉 200日移動平均：{round(latest['MA200'],2)}")
     st.write(f"📊 RSI：{round(rsi,2)}")
     st.write(f"📊 ボリンジャーバンド判定：**{bb_status}**")
-    st.write("🧪 df行数：", len(df))
-    st.write("🧪 データヘッド：", df.head())
+
+    # 判定ロジック
     signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data)
     st.markdown(f"### 判定結果：{signal}")
+
+
