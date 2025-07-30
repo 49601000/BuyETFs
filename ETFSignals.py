@@ -108,10 +108,16 @@ for symbol in symbols.keys():
 
     # データ取得と空チェック
     df = yf.download(symbol, period='6mo', interval='1d')
-    if df.empty or bool(df['Close'].isnull().all()):
-        st.error(f"{symbol} の株価データが取得できませんでした。")
-        continue
 
+    if df.empty:
+    st.error(f"{symbol} のデータが取得できませんでした。")
+    continue
+
+    if df['Close'].isnull().all():
+    st.warning(f"{symbol} の Close データが全て欠損しています。")
+    continue
+
+    
     # 指標計算
     df['RSI'] = compute_rsi(df['Close'])
     df['UpperBand'], df['LowerBand'] = compute_bollinger_bands(df['Close'])
