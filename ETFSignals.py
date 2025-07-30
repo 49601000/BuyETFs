@@ -117,13 +117,3 @@ for symbol in symbols:
 
     signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data)
     st.markdown(f"### 判定結果：{signal}")
-
-available_cols = ['Close', 'MA50', 'MA200', 'LowerBand', 'UpperBand']
-plot_cols = [col for col in available_cols if col in df.columns and df[col].notna().any()]
-for col in available_cols:
-    if col in df.columns:
-        try:
-            if bool(df[col].notna().any()):
-                plot_cols.append(col)
-        except Exception as e:
-            st.warning(f"{col} の評価時にエラー: {e}")
