@@ -43,9 +43,10 @@ def get_dividend_yield(symbol):
         print(f"利回り取得エラー: {e}")
         return None
 
+# ✅ ^GSPC の代わりに SPY の利回りを取得
 def get_sp500_yield():
     try:
-        ticker = yf.Ticker('^GSPC')
+        ticker = yf.Ticker('SPY')
         info = ticker.info
         dy = info.get('dividendYield', None)
         if dy is not None:
@@ -53,7 +54,7 @@ def get_sp500_yield():
         else:
             return None
     except Exception as e:
-        print(f"S&P500利回り取得エラー: {e}")
+        print(f"SPY利回り取得エラー: {e}")
         return None
 
 def rate_spike_recent(rates_df):
@@ -95,9 +96,9 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data):
 # --- S&P500利回り ---
 sp500_yield = get_sp500_yield()
 if sp500_yield:
-    st.write(f"📰 **S&P500分配金利回り**：{sp500_yield} %")
+    st.write(f"📰 **S&P500（SPY代用）分配金利回り**：{sp500_yield} %")
 else:
-    st.warning("S&P500の分配金利回りを取得できませんでした。")
+    st.warning("S&P500（SPY）の分配金利回りを取得できませんでした。")
 
 # --- メイン処理 ---
 for symbol in symbols.keys():
