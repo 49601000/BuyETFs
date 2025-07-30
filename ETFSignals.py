@@ -118,4 +118,10 @@ for symbol in symbols:
     signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data)
     st.markdown(f"### 判定結果：{signal}")
 
-    st.line_chart(df[['Close', 'MA50', 'MA200', 'LowerBand', 'UpperBand']])
+available_cols = ['Close', 'MA50', 'MA200', 'LowerBand', 'UpperBand']
+plot_cols = [col for col in available_cols if col in df.columns and df[col].notna().any()]
+
+if plot_cols:
+    st.line_chart(df[plot_cols])
+else:
+    st.warning("チャートに表示できるデータが不足しています。")
