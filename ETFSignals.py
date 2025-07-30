@@ -106,8 +106,16 @@ for symbol in symbols.keys():
 
     df = yf.download(symbol, period='6mo', interval='1d').dropna()
 
-    if (df.empty) or (df['Close'].isnull().all()):
+    if df.empty:
         st.error(f"{symbol} のデータが取得できませんでした。")
+        continue
+
+    if 'Close' not in df.columns:
+        st.error(f"{symbol} のデータに Close カラムがありません。")
+        continue
+
+    if df['Close'].isnull().all():
+        st.warning(f"{symbol} の Close データが全て欠損しています。")
         continue
 
 
