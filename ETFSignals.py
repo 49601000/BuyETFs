@@ -108,7 +108,7 @@ for symbol in symbols.keys():
 
     # データ取得と空チェック
     df = yf.download(symbol, period='6mo', interval='1d')
-    if df.empty or df['Close'].isnull().all():
+    if df.empty or bool(df['Close'].isnull().all()):
         st.error(f"{symbol} の株価データが取得できませんでした。")
         continue
 
