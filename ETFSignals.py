@@ -8,7 +8,7 @@ st.title("📊 ETF再投資判定")
 symbols = {'VYM': 'NYSE', 'JEPQ': 'NASDAQ', 'JEPI': 'NYSE', 'TLT': 'NYSE'}
 
 #マクロ指標取得
-vxn_data = yf.download('^VXN', period='3mo', interval='1d')
+vxn_data = yf.download('^VIX', period='3mo', interval='1d')
 rates_data = yf.download('^TNX', period='3mo', interval='1d')
 rate_latest = float(rates_data['Close'].iloc[-1])
 
