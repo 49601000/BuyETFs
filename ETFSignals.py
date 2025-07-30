@@ -150,6 +150,7 @@ for symbol in symbols:
     st.write(f"📉 200日移動平均：{round(latest['MA200'],2)}")
     st.write(f"📊 RSI：{round(rsi,2)}")
     st.write(f"📊 ボリンジャーバンド判定：**{bb_status}**")
-
+    st.write("🧪 df行数：", len(df))
+    st.write("🧪 データヘッド：", df.head())
     signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data)
     st.markdown(f"### 判定結果：{signal}")
