@@ -7,12 +7,13 @@ st.title("📊 ETF再投資判定")
 
 symbols = {'VYM': 'NYSE', 'JEPQ': 'NASDAQ', 'JEPI': 'NYSE', 'TLT': 'NYSE'}
 
-# ──────────── マクロ指標取得 ────────────
+#マクロ指標取得
 vxn_data = yf.download('^VXN', period='3mo', interval='1d')
 rates_data = yf.download('^TNX', period='3mo', interval='1d')
-rate_latest = rates_data['Close'].iloc[-1]
+rate_latest = float(rates_data['Close'].iloc[-1])
 
-# ──────────── 指標計算関数 ────────────
+#指標計算関数
+#RSI
 def compute_rsi(series, period=14):
     delta = series.diff()
     gain = delta.clip(lower=0)
@@ -25,6 +26,7 @@ def compute_rsi(series, period=14):
     rsi = 100 - (100 / (1 + rs))
     return rsi
 
+#ボリンジャーバンド（1δ）
 def compute_bollinger_bands(series, period=20, num_std=2):
     sma = series.rolling(window=period).mean()
     std = series.rolling(window=period).std()
@@ -33,7 +35,7 @@ def compute_bollinger_bands(series, period=20, num_std=2):
     lower_band = sma - num_std * std
     return upper_band, lower_band
 
-# ──────────── 分配金利回り関数 ────────────
+#分配金利回り関数
 def get_dividend_yield(symbol):
     try:
         ticker = yf.Ticker(symbol)
@@ -42,7 +44,7 @@ def get_dividend_yield(symbol):
     except Exception as e:
         print(f"利回り取得エラー: {e}")
         return '取得不可'
-
+#SP500の分配金取得
 def get_sp500_yield():
     try:
         ticker = yf.Ticker('^GSPC')
@@ -52,13 +54,14 @@ def get_sp500_yield():
         print(f"S&P500利回り取得エラー: {e}")
         return '取得不可'
 
+#金利上昇スパイク判定（30日間で30〜50bpの上昇があったか）
 def rate_spike_recent(rates_df):
-    recent = rates_df['Close'].iloc[-10:]
+    recent = rates_df['Close'].iloc[-30:]
     delta = recent.iloc[-1] - recent.iloc[0]
     return 30 <= delta <= 50
 
-# ──────────── 押し目判定ロジック ────────────
-    signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data)  
+# ──────────── 押し目判定関数 ────────────
+def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data):
     latest = df.iloc[-1]
     close = float(latest['Close'])
     rsi = float(latest['RSI'])
@@ -96,12 +99,13 @@ def rate_spike_recent(rates_df):
 
     return '⏸ 様子見'
 
-# ──────────── S&P500利回りの事前取得 ────────────
+# ──────────── S&P500利回り取得 ────────────
 sp500_yield = get_sp500_yield()
 
-# ──────────── メイン処理ループ ────────────
+# ──────────── メイン処理 ────────────
 for symbol in symbols:
     st.subheader(f"🔎 {symbol}")
+
     df = yf.download(symbol, period='6mo', interval='1d')
     df['RSI'] = compute_rsi(df['Close'])
     df['UpperBand'], df['LowerBand'] = compute_bollinger_bands(df['Close'])
@@ -111,7 +115,7 @@ for symbol in symbols:
     yield_pct = get_dividend_yield(symbol)
     st.markdown(f"**分配金利回り**：{yield_pct} %")
 
-    signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield)
+    signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data)
     st.markdown(f"### 判定結果：{signal}")
 
     st.line_chart(df[['Close', 'MA50', 'MA200', 'LowerBand', 'UpperBand']])
