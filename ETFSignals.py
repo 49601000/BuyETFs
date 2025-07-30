@@ -5,7 +5,7 @@ import yfinance as yf
 st.set_page_config(page_title="ETF再投資判定", page_icon="📊")
 st.title("📊 ETF再投資判定")
 
-# --- 設定 ---
+# --- 対象ETF ---
 symbols = {'VYM': 'NYSE', 'JEPQ': 'NASDAQ', 'JEPI': 'NYSE', 'TLT': 'NYSE'}
 
 # --- マクロ指標取得 ---
@@ -26,36 +26,30 @@ def compute_rsi(series, period=14):
 def compute_bollinger_bands(series, period=20, num_std=2):
     sma = series.rolling(period).mean()
     std = series.rolling(period).std()
-    upper = sma + (num_std * std)
-    lower = sma - (num_std * std)
-    return upper, lower
+    return sma + (num_std * std), sma - (num_std * std)
 
 def get_dividend_yield(symbol):
     try:
         ticker = yf.Ticker(symbol)
         info = ticker.info
-        dy = info.get('dividendYield', None)
+        dy = info.get('dividendYield')
         if dy is not None:
             return round(dy * 100, 2)
-        else:
-            return None
     except Exception as e:
         print(f"利回り取得エラー: {e}")
-        return None
+    return None
 
-# ✅ ^GSPC の代わりに SPY の利回りを取得
+# ✅ S&P500 は SPY の利回りを代用
 def get_sp500_yield():
     try:
         ticker = yf.Ticker('SPY')
         info = ticker.info
-        dy = info.get('dividendYield', None)
+        dy = info.get('dividendYield')
         if dy is not None:
             return round(dy * 100, 2)
-        else:
-            return None
     except Exception as e:
         print(f"SPY利回り取得エラー: {e}")
-        return None
+    return None
 
 def rate_spike_recent(rates_df):
     recent = rates_df['Close'].dropna().iloc[-30:]
@@ -93,7 +87,7 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data):
             return '🔔 押し目買いチャンス'
     return '⏸ 様子見'
 
-# --- S&P500利回り ---
+# --- S&P500（SPY）の分配金利回り ---
 sp500_yield = get_sp500_yield()
 if sp500_yield:
     st.write(f"📰 **S&P500（SPY代用）分配金利回り**：{sp500_yield} %")
@@ -104,22 +98,30 @@ else:
 for symbol in symbols.keys():
     st.subheader(f"🔎 {symbol}")
 
-    df = yf.download(symbol, period='6mo', interval='1d').dropna()
+    # データ取得
+    df = yf.download(symbol, period='6mo', interval='1d')
 
-    if df.empty:
-        st.error(f"{symbol} のデータが取得できませんでした。")
+    # ✅ 型確認
+    if not isinstance(df, pd.DataFrame):
+        st.error(f"{symbol} のデータ取得に失敗しました（DataFrame ではありません）。")
         continue
 
+    # ✅ 空データ確認
+    if df.empty:
+        st.error(f"{symbol} のデータが取得できませんでした（空データ）。")
+        continue
+
+    # ✅ カラム存在確認
     if 'Close' not in df.columns:
         st.error(f"{symbol} のデータに Close カラムがありません。")
         continue
 
+    # ✅ Close全欠損確認
     if df['Close'].isnull().all():
         st.warning(f"{symbol} の Close データが全て欠損しています。")
         continue
 
-
-    # 指標計算
+    # --- 指標計算 ---
     df['RSI'] = compute_rsi(df['Close'])
     df['UpperBand'], df['LowerBand'] = compute_bollinger_bands(df['Close'])
     df['MA20'] = df['Close'].rolling(20).mean()
@@ -131,7 +133,7 @@ for symbol in symbols.keys():
     price = latest['Close']
     rsi = latest['RSI']
 
-    # BB判定
+    # --- BB判定 ---
     if price > latest['UpperBand']:
         bb_status = "上抜け（買われ過ぎ）"
     elif price < latest['LowerBand']:
@@ -146,7 +148,7 @@ for symbol in symbols.keys():
     else:
         st.warning("分配金利回りを取得できませんでした。")
 
-    # 指標表示
+    # --- 指標表示 ---
     st.write(f"📌 Close価格：{round(price,2)}")
     st.write(f"📈 20日移動平均：{round(latest['MA20'],2)}")
     st.write(f"📉 50日移動平均：{round(latest['MA50'],2)}")
@@ -154,6 +156,6 @@ for symbol in symbols.keys():
     st.write(f"📊 RSI：{round(rsi,2)}")
     st.write(f"📊 ボリンジャーバンド判定：**{bb_status}**")
 
-    # 判定
+    # --- 判定 ---
     signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data)
     st.markdown(f"### 判定結果：{signal}")
