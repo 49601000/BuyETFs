@@ -110,11 +110,11 @@ for symbol in symbols.keys():
     df = yf.download(symbol, period='6mo', interval='1d')
 
     if df.empty:
-    st.error(f"{symbol} のデータが取得できませんでした。")
+        st.error(f"{symbol} のデータが取得できませんでした。")
     continue
 
     if df['Close'].isnull().all():
-    st.warning(f"{symbol} の Close データが全て欠損しています。")
+        st.warning(f"{symbol} の Close データが全て欠損しています。")
     continue
 
     
