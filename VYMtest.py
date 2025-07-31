@@ -22,3 +22,4 @@ else:
         st.write(f"📊 **RSI (14日)**: {latest['RSI']:.2f}")
         st.write(f"📉 **200日移動平均**: {latest['MA200']:.2f}")
     else:
+        st.warning("有効なRSIまたはMA200のデータがまだ計算されていないようです。もう少し長い期間を指定すると改善するかもしれません。")
