@@ -130,21 +130,22 @@ for symbol in symbols.keys():
     if ma200_available:
         base_cols.append('MA200')
 
+    # 欠損列チェック
     missing_cols = [col for col in base_cols if col not in df.columns]
     if missing_cols:
         st.warning(f"{symbol} の指標列が不足しています: {missing_cols}")
         continue
-    
-safe_cols = []
-for col in base_cols:
-    try:
-        if col in df.columns and not df[col].dropna().empty:
-            safe_cols.append(col)
-    except Exception:
-        continue  # 異常列を安全に除外
 
-if safe_cols:
-    # 念のため、存在する列だけをsubsetに渡す
+    # dropnaするための安全な列リスト作成
+    safe_cols = []
+    for col in base_cols:
+        try:
+            if col in df.columns and not df[col].dropna().empty:
+                safe_cols.append(col)
+        except Exception:
+            continue  # 異常列を安全に除外
+
+    # 実際にdropnaできる列だけで処理
     valid_cols = [col for col in safe_cols if col in df.columns]
     if valid_cols:
         try:
@@ -155,13 +156,13 @@ if safe_cols:
     else:
         st.warning(f"{symbol} の有効な指標列が存在しないため、処理をスキップします。")
         continue
-else:
-    st.warning(f"{symbol} の有効な指標列が存在しないため、処理をスキップします。")
-    continue
 
-if df.empty:
-    st.warning(f"{symbol} の有効な指標データが取得できませんでした。")
-    continue
+    # dropna後のデータ確認
+    if df.empty:
+        st.warning(f"{symbol} の有効な指標データが取得できませんでした。")
+        continue
+
+    # --- 最新データの表示 ---
     latest = df.iloc[-1]
     price = latest['Close']
     rsi = latest['RSI']
