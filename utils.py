@@ -6,7 +6,8 @@ def calculate_yield_avg_1y(symbol):
     etf = yf.Ticker(symbol)
     dividends = etf.dividends
 
-    dividends.index = pd.to_datetime(dividends.index)  # これで安全に比較できる！
+    # ここでインデックスの型を datetime に変換
+    dividends.index = pd.to_datetime(dividends.index)
 
     one_year_ago = pd.Timestamp.today() - pd.DateOffset(years=1)
     recent_dividends = dividends[dividends.index >= one_year_ago]
