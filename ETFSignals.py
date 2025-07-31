@@ -195,12 +195,12 @@ for symbol, name in symbols.items():
         levels = ["バーゲン", "中度押し目", "軽度押し目"]
         current_level = extract_signal_level(signal)
         
-        if current_level in levels:
-        idx = levels.index(current_level)
         # シグナルが存在する場合はその価格
+        if current_level in levels:
+            idx = levels.index(current_level)
+        # 存在しなければ上位の価格（＝より緩い条件）を表示
         if current_level in price_info:
             return price_info[current_level]
-        # 存在しなければ上位の価格（＝より緩い条件）を表示
         elif idx + 1 < len(levels) and levels[idx + 1] in price_info:
             return price_info[levels[idx + 1]]
         else:
