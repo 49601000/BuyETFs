@@ -125,7 +125,7 @@ for symbol in symbols.keys():
     else:
         st.info(f"{symbol} は200日移動平均を計算するほどのデータがありません。")
 
-    # --- dropnaの前に各列のNaN件数を出す ---
+    # --- 欠損値状況を表示（デバッグ用） ---
     base_cols = ['RSI', 'UpperBand', 'LowerBand', 'MA20', 'MA50']
     if ma200_available:
         base_cols.append('MA200')
@@ -133,14 +133,23 @@ for symbol in symbols.keys():
         if col in df.columns:
             st.write(f"{symbol}: {col} 欠損数 {df[col].isna().sum()} / {len(df)}")
 
-    # --- 全てNaNな列はdropnaの対象から除外 ---
+    # --- dropna対象列の厳密な作成 ---
     drop_cols = [col for col in base_cols if col in df.columns and df[col].notna().sum() > 0]
+    st.write(f"{symbol}: dropna対象列: {drop_cols}")
+    # drop_colsに1つでもDataFrameにない列があれば除外
+    drop_cols = [col for col in drop_cols if col in df.columns]
 
     if not drop_cols:
         st.warning(f"{symbol} の有効な指標列が存在しないため、処理をスキップします。")
         continue
 
-    df = df.dropna(subset=drop_cols)
+    try:
+        df = df.dropna(subset=drop_cols)
+    except KeyError as e:
+        st.warning(f"{symbol}: dropna処理に失敗しました（欠損列: {e}）")
+        continue
+
+    st.write(f"{symbol}: dropna後のデータ数: {len(df)}")
     if df.empty:
         st.warning(f"{symbol} の有効な指標データが取得できませんでした。")
         continue
