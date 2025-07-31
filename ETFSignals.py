@@ -125,39 +125,22 @@ for symbol in symbols.keys():
     else:
         st.info(f"{symbol} は200日移動平均を計算するほどのデータがありません。")
 
-    # --- 安全な dropna 処理 ---
+    # --- dropnaの前に各列のNaN件数を出す ---
     base_cols = ['RSI', 'UpperBand', 'LowerBand', 'MA20', 'MA50']
     if ma200_available:
         base_cols.append('MA200')
-
-    # 欠損列チェック
-    missing_cols = [col for col in base_cols if col not in df.columns]
-    if missing_cols:
-        st.warning(f"{symbol} の指標列が不足しています: {missing_cols}")
-        continue
-
-    # dropnaするための安全な列リスト作成
-    safe_cols = []
     for col in base_cols:
-        try:
-            if col in df.columns and not df[col].dropna().empty:
-                safe_cols.append(col)
-        except Exception:
-            continue  # 異常列を安全に除外
+        if col in df.columns:
+            st.write(f"{symbol}: {col} 欠損数 {df[col].isna().sum()} / {len(df)}")
 
-    # 実際にdropnaできる列だけで処理
-    valid_cols = [col for col in safe_cols if col in df.columns]
-    if valid_cols:
-        try:
-            df = df.dropna(subset=valid_cols)
-        except KeyError as e:
-            st.warning(f"{symbol}: dropna処理に失敗しました（欠損列: {e}）")
-            continue
-    else:
+    # --- 全てNaNな列はdropnaの対象から除外 ---
+    drop_cols = [col for col in base_cols if col in df.columns and df[col].notna().sum() > 0]
+
+    if not drop_cols:
         st.warning(f"{symbol} の有効な指標列が存在しないため、処理をスキップします。")
         continue
 
-    # dropna後のデータ確認
+    df = df.dropna(subset=drop_cols)
     if df.empty:
         st.warning(f"{symbol} の有効な指標データが取得できませんでした。")
         continue
@@ -178,7 +161,6 @@ for symbol in symbols.keys():
     else:
         st.warning("分配金利回りを取得できませんでした。")
 
-    # --- 指標表示 ---
     st.write(f"📌 Close価格：{round(price,2)}")
     st.write(f"📈 20日移動平均：{round(latest['MA20'],2)}")
     st.write(f"📉 50日移動平均：{round(latest['MA50'],2)}")
