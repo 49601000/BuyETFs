@@ -40,10 +40,6 @@ def rate_spike_recent(rates_df):
     except:
         return False
 
-# 関数を呼び出す
-from utils import calculate_yield_avg_1y
-
-yield_avg_1y = calculate_yield_avg_1y(symbols)
 
 def is_buy_signal(
     df,
@@ -123,6 +119,11 @@ st.markdown(
 
 # --- メインループ ---
 for symbol in symbols.keys():
+    # 関数を呼び出す
+from utils import calculate_yield_avg_1y
+
+yield_avg_1y = calculate_yield_avg_1y(symbols)
+
     st.subheader(f"🔎 {symbol}")
     etf = yf.Ticker(symbol)
     df = etf.history(period='1y', interval='1d')
