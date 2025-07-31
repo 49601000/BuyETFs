@@ -1,16 +1,14 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
+import math
+
 
 st.set_page_config(page_title="VYM指標チェック", page_icon="📈")
 st.title("📈 VYM：価格・RSI・50日移動平均")
 
 # データ取得（50MA計算に十分な期間）
 df = yf.download('VYM', period='12mo', interval='1d')
-
-import math
-
-# ...（前略）
 
     if df_valid.empty:
         st.warning("有効なRSIやMA50データがまだ揃っていません。もう少し長めの期間を指定すると改善するかもしれません。")
