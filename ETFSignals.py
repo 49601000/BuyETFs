@@ -246,7 +246,7 @@ st.dataframe(
     column_config={
         "SYMBOL": st.column_config.TextColumn("銘柄コード", width="small"),
         "ETF名称": st.column_config.TextColumn("ETF名称", width="medium"),
-        "シグナル": st.column_config.TextColumn("投資判定", width="medium"),
+        "シグナル": st.column_config.TextColumn("投資判定", width="small"),
         "分配利回り(%)": st.column_config.NumberColumn("分配利回り(%)", format="%.2f", width="small"),
         "現在価格": st.column_config.NumberColumn("現在価格", format="%.2f", width="small"),
         "買い増し上限": st.column_config.NumberColumn("買い増し上限", format="%.2f", width="small"),
