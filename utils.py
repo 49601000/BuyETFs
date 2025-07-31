@@ -2,8 +2,8 @@
 import yfinance as yf
 import pandas as pd
 
-def calculate_yield_avg_1y(symbol):
-    etf = yf.Ticker(symbol)
+def calculate_yield_avg_1y(symbols):
+    etf = yf.Ticker(symbols)
     dividends = etf.dividends
 
     one_year_ago = pd.Timestamp.today() - pd.DateOffset(years=1)
