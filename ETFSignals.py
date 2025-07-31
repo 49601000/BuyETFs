@@ -152,7 +152,7 @@ sp500_yield = get_sp500_yield()
 rate_display = f"{rate_latest:.2f} %" if rate_latest is not None else "取得不可"
 st.markdown(f"🧭 **マクロ指標まとめ**｜VIX指数: {vix_latest}｜10年債金利: {rate_display}｜S&P500分配利回り: {sp500_yield} %")
 
-# === ETFデータ一覧の構築 ===
+# === ETFデータ一覧の構築 ==================================================
 etf_summary = []
 
 for symbol, name in symbols.items():
@@ -205,6 +205,7 @@ for symbol, name in symbols.items():
             return price_info[levels[idx + 1]]
         else:
             return price_info.get("軽度押し目", "—")  # 様子見などの場合は軽度押し目価格を採用
+    buy_cap = select_price_by_signal(signal, price_info)  # ←これが必要！
 
     # シグナル判定（マクロ指標は事前に rate_latest, sp500_yield を取得済み）
     signal = is_buy_signal(df, symbol, rate_latest, sp500_yield, vol_latest, vol_avg_20)
