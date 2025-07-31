@@ -12,26 +12,26 @@ def calculate_rsi(data, period=14):
     rsi = 100 - (100 / (1 + rs))
     return rsi
 
-# Streamlit UI
+# Streamlit UI設定
 st.set_page_config(page_title="ETF再投資判定", page_icon="📊")
 st.title("📊 ETF再投資判定")
 
-# ユーザーからティッカー入力
+# ETFリスト
 symbols = {'VYM': 'NYSE', 'JEPQ': 'NASDAQ', 'JEPI': 'NYSE', 'TLT': 'NYSE'}
 
-# データ取得と処理
-if symbols:
-    etf = yf.Ticker(symbols)
+# データ取得と表示
+for ticker in symbols.keys():
+    st.markdown(f"### 📌 {ticker}")
+    etf = yf.Ticker(ticker)
     df = etf.history(period="3mo", interval="1d")
     df['RSI'] = calculate_rsi(df)
 
-    st.subheader(f"{ticker} のRSI付き価格データ")
     st.dataframe(df[['Close', 'RSI']].dropna())
 
-    # 📤 書き出し機能
-    csv = df.to_csv(index=True).encode("utf-8")
+    # CSV書き出し
+    csv = df[['Close', 'RSI']].dropna().to_csv(index=True).encode("utf-8")
     st.download_button(
-        label="📁 CSVでダウンロード",
+        label=f"{ticker}の📁 CSVをダウンロード",
         data=csv,
         file_name=f"{ticker}_RSI_data.csv",
         mime="text/csv"
