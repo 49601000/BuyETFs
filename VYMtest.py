@@ -6,7 +6,7 @@ st.set_page_config(page_title="VYM指標チェック", page_icon="📈")
 st.title("📈 VYM：価格・RSI・50日移動平均")
 
 # データ取得（50MA計算に十分な期間）
-df = yf.download('VYM', period='3mo', interval='1d')
+df = yf.download('VYM', period='12mo', interval='1d')
 
 if df.empty or 'Close' not in df.columns:
     st.error("VYMの価格データ取得に失敗しました。")
