@@ -204,8 +204,7 @@ for symbol, name in symbols.items():
         elif idx + 1 < len(levels) and levels[idx + 1] in price_info:
             return price_info[levels[idx + 1]]
     else:
-        # 様子見などの場合は軽度押し目価格を採用
-        return price_info.get("軽度押し目", "—")
+        return price_info.get("軽度押し目", "—")  # 様子見などの場合は軽度押し目価格を採用
 
     # シグナル判定（マクロ指標は事前に rate_latest, sp500_yield を取得済み）
     signal = is_buy_signal(df, symbol, rate_latest, sp500_yield, vol_latest, vol_avg_20)
