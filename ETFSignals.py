@@ -122,8 +122,7 @@ for symbol in symbols.keys():
         st.write(f"📎 分配金利回り：{yield_pct} %")
     else:
         st.warning("分配金利回り取得不可")
-
-    st.write(f"📌 Close価格：{round(price,2)}"｜f"📊 RSI：{round(rsi,2)}")
+    st.write(f"📌 Close価格：{round(price,2)}｜📊 RSI：{round(rsi,2)}")
     ma20 = round(latest['MA20'], 2)
     ma50 = round(latest['MA50'], 2)
     ma200 = round(latest['MA200'], 2) if ma200_available else "—（データ不足）"
