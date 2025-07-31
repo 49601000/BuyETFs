@@ -134,8 +134,7 @@ for symbol, name in symbols.items():
     # 分配利回りの取得（etf.info から）
     try:
         yield_pct = round(etf.info.get('dividendYield', None), 2)
-        except:
-            yield_pct = None
+        except:yield_pct = None
     # シグナル判定（マクロ指標は事前に rate_latest, sp500_yield を取得済み）
 
     signal = is_buy_signal(df, symbol, rate_latest, sp500_yield, vol_latest, vol_avg_20)
