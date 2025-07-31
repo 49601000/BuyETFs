@@ -210,13 +210,12 @@ for symbol, name in symbols.items():
         st.warning(f"{symbol} の分配利回り取得エラー: {e}")
         yield_pct = None
 
+    # シグナル判定（マクロ指標は事前に rate_latest, sp500_yield を取得済み）
+    signal = is_buy_signal(df, symbol, rate_latest, sp500_yield, vol_latest, vol_avg_20)
     # 買い増し金額目安    
     price_info = max_buy_price(df, symbol)
     buy_cap = select_price_by_signal(signal, price_info)
 
-
-    # シグナル判定（マクロ指標は事前に rate_latest, sp500_yield を取得済み）
-    signal = is_buy_signal(df, symbol, rate_latest, sp500_yield, vol_latest, vol_avg_20)
     etf_summary.append({
         "SYMBOL": symbol,
         "ETF名称": name,
