@@ -214,7 +214,7 @@ for symbol, name in symbols.items():
         "シグナル": signal,
         "分配利回り(%)": yield_pct if yield_pct else "—",
         "現在価格": round(close_today, 2),
-        "買い増し上限": round(price_info, 2),
+        "買い増し上限": round(buy_cap, 2) if isinstance(buy_cap, (float, int)) else buy_cap,
         "前日終値": round(close_prev, 2),
         "RSI": rsi_today,
         "MA25": ma25,
