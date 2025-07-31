@@ -43,11 +43,11 @@ def rate_spike_recent(rates_df):
 # 関数を呼び出す
 from utils import calculate_yield_avg_1y
 
-yield_avg_1y = calculate_yield_avg_1y(symbol)
+yield_avg_1y = calculate_yield_avg_1y(symbols)
 
 def is_buy_signal(
     df,
-    symbol,
+    symbols,
     rate_latest,
     yield_pct,
     sp500_yield,
