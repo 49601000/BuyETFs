@@ -162,13 +162,13 @@ for symbol, name in symbols.items():
     etf_summary.append({
         "SYMBOL": symbol,
         "ETF名称": name,
+        "シグナル": signal,
+        "分配利回り(%)": yield_pct if yield_pct else "—",
         "現在価格": round(close_today, 2),
         "前日終値": round(close_prev, 2),
         "RSI": rsi_today,
         "MA25": ma25,
-        "MA50": ma50,
-        "分配利回り(%)": yield_pct if yield_pct else "—",
-        "シグナル": signal
+        "MA50": ma50
     })
 
 # === 表示 ===
