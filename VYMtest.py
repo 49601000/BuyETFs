@@ -20,7 +20,7 @@ st.title("📊 ETF再投資判定")
 symbols = {'VYM': 'NYSE', 'JEPQ': 'NASDAQ', 'JEPI': 'NYSE', 'TLT': 'NYSE'}
 
 # データ取得と処理
-if ticker:
+if symbols:
     etf = yf.Ticker(symbols)
     df = etf.history(period="3mo", interval="1d")
     df['RSI'] = calculate_rsi(df)
