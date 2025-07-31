@@ -236,7 +236,23 @@ for symbol, name in symbols.items():
     })
 
 # === 表示 ===
+# 表示：DataFrame作成
+df = pd.DataFrame(etf_summary)
+
 st.subheader("📋 ETF投資判定一覧")
-st.table(pd.DataFrame(etf_summary))
-
-
+st.dataframe(
+    df,
+    use_container_width=True,
+    column_config={
+        "SYMBOL": st.column_config.TextColumn("銘柄コード", width="small"),
+        "ETF名称": st.column_config.TextColumn("ETF名称", width="large"),
+        "シグナル": st.column_config.TextColumn("投資判定", width="medium"),
+        "分配利回り(%)": st.column_config.NumberColumn("分配利回り(%)", format="%.2f", width="small"),
+        "現在価格": st.column_config.NumberColumn("現在価格", format="%.2f", width="medium"),
+        "買い増し上限": st.column_config.NumberColumn("買い増し上限", format="%.2f", width="medium"),
+        "前日終値": st.column_config.NumberColumn("前日終値", format="%.2f", width="medium"),
+        "RSI": st.column_config.NumberColumn("RSI", format="%.2f", width="small"),
+        "MA25": st.column_config.NumberColumn("MA25", format="%.2f", width="small"),
+        "MA50": st.column_config.NumberColumn("MA50", format="%.2f", width="small")
+    }
+)
