@@ -131,7 +131,22 @@ def max_buy_price(df, symbol):
         }
 
     return {}
+ # 購入上限額
+   def select_price_by_signal(signal, price_info):
+    levels = ["バーゲン", "中度押し目", "軽度押し目"]
+    current_level = extract_signal_level(signal)
 
+    if current_level in levels:
+        idx = levels.index(current_level)
+        # 該当シグナルの価格があればそれを返す
+        if current_level in price_info:
+            return price_info[current_level]
+        # 該当がなければ1段階上の価格（より緩い条件）
+        elif idx + 1 < len(levels) and levels[idx + 1] in price_info:
+            return price_info[levels[idx + 1]]
+    # シグナルがない場合や価格が見つからない場合は軽度押し目価格
+    return price_info.get("軽度押し目", "—")
+       
 # === マクロ指標 ===
 # VIXの最新値をfloat型で抽出
 vix_data = get_vix_data()
@@ -147,6 +162,8 @@ except Exception as e:
     rate_latest = None
 # S&P500配当利回り
 sp500_yield = get_sp500_yield()
+
+
 
 # 表示
 rate_display = f"{rate_latest:.2f} %" if rate_latest is not None else "取得不可"
@@ -172,6 +189,9 @@ for symbol, name in symbols.items():
     df['MA25'] = df['Close'].rolling(25).mean()
     df['MA50'] = df['Close'].rolling(50).mean()
     df['MA75'] = df['Close'].rolling(75).mean()
+    price_info = max_buy_price(df, symbol)
+    buy_cap = select_price_by_signal(signal, price_info)
+
     # MAの最新値（任意で使う場合）
     ma25 = round(df['MA25'].iloc[-1], 2)
     ma50 = round(df['MA50'].iloc[-1], 2)
@@ -189,23 +209,6 @@ for symbol, name in symbols.items():
     except Exception as e:
         st.warning(f"{symbol} の分配利回り取得エラー: {e}")
         yield_pct = None
-
-    # 購入上限額
-    def select_price_by_signal(signal, price_info):
-        levels = ["バーゲン", "中度押し目", "軽度押し目"]
-        current_level = extract_signal_level(signal)
-
-    if current_level in levels:
-        idx = levels.index(current_level)
-        # 該当シグナルの価格があればそれを返す
-        if current_level in price_info:
-            return price_info[current_level]
-        # 該当がなければ1段階上の価格（より緩い条件）
-        elif idx + 1 < len(levels) and levels[idx + 1] in price_info:
-            return price_info[levels[idx + 1]]
-    # シグナルがない場合は軽度押し目価格（様子見対応）
-    return price_info.get("軽度押し目", "—")
-    buy_cap = select_price_by_signal(signal, price_info)  # ←これが必要！
 
     # シグナル判定（マクロ指標は事前に rate_latest, sp500_yield を取得済み）
     signal = is_buy_signal(df, symbol, rate_latest, sp500_yield, vol_latest, vol_avg_20)
