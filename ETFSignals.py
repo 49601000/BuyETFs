@@ -7,11 +7,10 @@ st.title("📊 ETF再投資判定")
 
 symbols = {'VYM': 'NYSE', 'JEPQ': 'NASDAQ', 'JEPI': 'NYSE', 'TLT': 'NYSE'}
 
-# --- マクロ指標取得（安全化） ---
+# --- マクロ指標取得 ---
 vix_data = yf.download('^VIX', period='3mo', interval='1d')
 if vix_data.empty:
     st.warning("⚠️ VIXデータが取得できませんでした。")
-
 rates_data = yf.download('^TNX', period='3mo', interval='1d')
 if rates_data.empty:
     st.warning("⚠️ 金利データ（TNX）の取得に失敗しました。")
@@ -104,7 +103,6 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data, m
 sp500_yield = get_sp500_yield()
 st.write(f"📰 **S&P500（SPY代用）分配金利回り**：{sp500_yield} %")
 
-# --- メイン処理 ---
 for symbol in symbols.keys():
     st.subheader(f"🔎 {symbol}")
     df = yf.download(symbol, period='12mo', interval='1d')
@@ -118,14 +116,13 @@ for symbol in symbols.keys():
     df['UpperBand'], df['LowerBand'] = compute_bollinger_bands(df['Close'])
     df['MA20'] = df['Close'].rolling(20).mean()
     df['MA50'] = df['Close'].rolling(50).mean()
-
     ma200_available = len(df) >= 200
     if ma200_available:
         df['MA200'] = df['Close'].rolling(200).mean()
     else:
         st.info(f"{symbol} は200日移動平均を計算するほどのデータがありません。")
 
-    # --- 欠損値状況を表示（デバッグ用） ---
+    # --- 欠損値状況を表示 ---
     base_cols = ['RSI', 'UpperBand', 'LowerBand', 'MA20', 'MA50']
     if ma200_available:
         base_cols.append('MA200')
@@ -134,10 +131,21 @@ for symbol in symbols.keys():
             st.write(f"{symbol}: {col} 欠損数 {df[col].isna().sum()} / {len(df)}")
 
     # --- dropna対象列の厳密な作成 ---
-    drop_cols = [col for col in base_cols if col in df.columns and df[col].notna().sum() > 0]
-    st.write(f"{symbol}: dropna対象列: {drop_cols}")
-    # drop_colsに1つでもDataFrameにない列があれば除外
+    drop_cols = []
+    for col in base_cols:
+        if col in df.columns and df[col].notna().sum() > 0:
+            drop_cols.append(col)
+    # さらに「本当にdfに存在する列だけ」に限定
     drop_cols = [col for col in drop_cols if col in df.columns]
+    st.write(f"{symbol}: dropna対象列: {drop_cols}")
+    st.write(f"{symbol}: DataFrame列: {list(df.columns)}")
+
+    # dropna前にテスト
+    try:
+        _ = df[drop_cols]
+    except KeyError as e:
+        st.warning(f"{symbol}: dropna前に存在しない列が混ざっています: {e}")
+        continue
 
     if not drop_cols:
         st.warning(f"{symbol} の有効な指標列が存在しないため、処理をスキップします。")
