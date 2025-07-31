@@ -192,8 +192,8 @@ for symbol, name in symbols.items():
 
     # 購入上限額
     def select_price_by_signal(signal, price_info):
-    levels = ["バーゲン", "中度押し目", "軽度押し目"]
-    current_level = extract_signal_level(signal)
+        levels = ["バーゲン", "中度押し目", "軽度押し目"]
+        current_level = extract_signal_level(signal)
 
     if current_level in levels:
         idx = levels.index(current_level)
