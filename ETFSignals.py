@@ -131,7 +131,6 @@ def max_buy_price(df, symbol):
         }
 
     return {}
-price_info = max_buy_price(df, symbol)
 
 # === マクロ指標 ===
 # VIXの最新値をfloat型で抽出
@@ -159,7 +158,6 @@ etf_summary = []
 for symbol, name in symbols.items():
     etf = yf.Ticker(symbol)
     df = etf.history(period='1y', interval='1d')
-
     if df.empty or len(df) < 50:
         continue
 
@@ -191,7 +189,9 @@ for symbol, name in symbols.items():
     except Exception as e:
         st.warning(f"{symbol} の分配利回り取得エラー: {e}")
         yield_pct = None
-            
+    # 購入上限額
+    price_info = max_buy_price(df, symbol)
+
     # シグナル判定（マクロ指標は事前に rate_latest, sp500_yield を取得済み）
     signal = is_buy_signal(df, symbol, rate_latest, sp500_yield, vol_latest, vol_avg_20)
     etf_summary.append({
