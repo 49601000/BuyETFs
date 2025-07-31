@@ -87,9 +87,10 @@ vix_latest = round(float(vix_value), 2)
 # 10年債金利（^TNX）の最新値をfloat型で抽出
 rates_data = get_rates_data()
 try:
-    value = rates_data['Close'].dropna().iloc[-1]
-    rate_latest = float(value) if pd.notnull(value) else None
+    rate_value = rates_data['Close'].dropna().iloc[-1]
+    rate_latest = round(float(rate_value), 2)
 except Exception as e:
+    st.warning(f"10年債金利データの抽出に失敗しました: {e}")
     rate_latest = None
 # S&P500配当利回り
 sp500_yield = get_sp500_yield()
@@ -97,7 +98,3 @@ sp500_yield = get_sp500_yield()
 # 表示
 rate_display = f"{rate_latest:.2f} %" if rate_latest is not None else "取得不可"
 st.markdown(f"🧭 **マクロ指標まとめ**｜VIX指数: {vix_latest}｜10年債金利: {rate_display}｜S&P500分配利回り: {sp500_yield} %")
-
-
-st.write("📥 取得した10年債金利データ（確認用）:")
-st.dataframe(rates_data.tail())
