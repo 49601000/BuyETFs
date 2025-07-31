@@ -212,6 +212,12 @@ for symbol, name in symbols.items():
 
     # シグナル判定（マクロ指標は事前に rate_latest, sp500_yield を取得済み）
     signal = is_buy_signal(df, symbol, rate_latest, sp500_yield, vol_latest, vol_avg_20)
+    def extract_signal_level(signal_str):
+    for level in ["バーゲン", "中度押し目", "軽度押し目"]:
+        if level in signal_str:
+            return level
+    return None
+
     # 買い増し金額目安    
     price_info = max_buy_price(df, symbol)
     buy_cap = select_price_by_signal(signal, price_info)
