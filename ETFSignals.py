@@ -134,10 +134,14 @@ for symbol in symbols.keys():
     if missing_cols:
         st.warning(f"{symbol} の指標列が不足しています: {missing_cols}")
         continue
-
-    valid_cols = [col for col in base_cols if col in df.columns]
-    df = df.dropna(subset=valid_cols)
-
+    
+    valid_cols = [col for col in base_cols if col in df.columns and not df[col].dropna().empty]
+    if valid_cols:
+        df = df.dropna(subset=valid_cols)
+    else:
+        st.warning(f"{symbol} の有効な指標列が存在しないため、処理をスキップします。")
+        continue
+    
     if df.empty:
         st.warning(f"{symbol} の有効な指標データが取得できませんでした。")
         continue
