@@ -122,45 +122,24 @@ for symbol in symbols.keys():
     else:
         st.info(f"{symbol} は200日移動平均を計算するほどのデータがありません。")
 
-    # --- 欠損値状況を表示 ---
+    # --- 指標列の欠損チェック ---
     base_cols = ['RSI', 'UpperBand', 'LowerBand', 'MA20', 'MA50']
     if ma200_available:
         base_cols.append('MA200')
-    for col in base_cols:
-        if col in df.columns:
-            st.write(f"{symbol}: {col} 欠損数 {df[col].isna().sum()} / {len(df)}")
 
-    # --- dropna対象列の厳密な作成 ---
-    drop_cols = []
-    for col in base_cols:
-        if col in df.columns and df[col].notna().sum() > 0:
-            drop_cols.append(col)
-    # さらに「本当にdfに存在する列だけ」に限定
-    drop_cols = [col for col in drop_cols if col in df.columns]
-    st.write(f"{symbol}: dropna対象列: {drop_cols}")
-    st.write(f"{symbol}: DataFrame列: {list(df.columns)}")
+    drop_cols = [col for col in base_cols if col in df.columns and df[col].dropna().shape[0] > 0]
 
-    # dropna前にテスト
-    try:
-        _ = df[drop_cols]
-    except KeyError as e:
-        st.warning(f"{symbol}: dropna前に存在しない列が混ざっています: {e}")
-        continue
-
+    st.write(f"{symbol}: 有効な指標列: {drop_cols}")
     if not drop_cols:
-        st.warning(f"{symbol} の有効な指標列が存在しないため、処理をスキップします。")
+        st.warning(f"{symbol} の有効な指標列が存在しません。")
         continue
 
-    try:
-        df = df.dropna(subset=drop_cols)
-    except KeyError as e:
-        st.warning(f"{symbol}: dropna処理に失敗しました（欠損列: {e}）")
+    df_valid = df.dropna(subset=drop_cols)
+    if df_valid.empty:
+        st.warning(f"{symbol}: 有効な指標データ行が存在しないため、スキップします。")
         continue
-
-    st.write(f"{symbol}: dropna後のデータ数: {len(df)}")
-    if df.empty:
-        st.warning(f"{symbol} の有効な指標データが取得できませんでした。")
-        continue
+    else:
+        df = df_valid
 
     # --- 最新データの表示 ---
     latest = df.iloc[-1]
@@ -181,11 +160,7 @@ for symbol in symbols.keys():
     st.write(f"📌 Close価格：{round(price,2)}")
     st.write(f"📈 20日移動平均：{round(latest['MA20'],2)}")
     st.write(f"📉 50日移動平均：{round(latest['MA50'],2)}")
-    if ma200_available:
-        st.write(f"📉 200日移動平均：{round(latest['MA200'],2)}")
-    else:
-        st.write("📉 200日移動平均：—（データ不足）")
-
+    st.write(f"📉 200日移動平均：{round(latest['MA200'],2)}" if ma200_available else "📉 200日移動平均：—（データ不足）")
     st.write(f"📊 RSI：{round(rsi,2)}")
     st.write(f"📊 ボリンジャーバンド判定：**{bb_status}**")
 
