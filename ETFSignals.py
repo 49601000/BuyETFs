@@ -40,9 +40,8 @@ def rate_spike_recent(rates_df):
     except:
         return False
 
-
-def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data, ma200_available, yield_avg_1y):
-    latest = df.iloc[-1]
+def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data,
+                  ma200_available, yield_avg_1y, vol_latest, vol_avg_20):
     close = latest['Close']
     rsi = latest['RSI']
     ma25 = latest.get('MA25')
@@ -52,6 +51,8 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data, m
     boll_1sigma = latest.get('BB_lower_1sigma')
     boll_1_5sigma = latest.get('BB_lower_1_5sigma')
     boll_2sigma = latest.get('BB_lower_2sigma')
+    vol_latest = df['Volume'].iloc[-1]
+    vol_avg_20 = df['Volume'].rolling(20).mean().iloc[-1]
 
     # 安全な条件構築（Noneチェック）
     ma200_cond = close <= ma200 if (ma200_available and ma200 is not None) else False
@@ -166,5 +167,6 @@ for symbol in symbols:
     st.write(f"📊 移動平均：20日 = {ma20}｜50日 = {ma50}｜200日 = {ma200}")
     st.write(f"📊 ボリンジャーバンド判定：**{bb_status}**")
 
-    signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data, ma200_available, yield_avg_1y)
+    signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data,
+                  ma200_available, yield_avg_1y, vol_latest, vol_avg_20)
     st.markdown(f"### 判定結果：{signal}")
