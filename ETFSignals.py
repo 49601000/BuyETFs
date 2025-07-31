@@ -121,7 +121,7 @@ for symbol in symbols.keys():
         st.error(f"{symbol} に Close カラムが存在しません。")
         continue
     # ✅ Close データ欠損確認
-    if df['Close'].isnull().all():
+    if df['Close'].dropna().empty:
         st.warning(f"{symbol} の Close データが全て欠損しています。")
         continue
 
