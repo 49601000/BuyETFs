@@ -1,33 +1,30 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-import math
 
-st.set_page_config(page_title="VYM指標チェック", page_icon="📈")
-st.title("📈 VYM：価格・RSI・50日移動平均")
+st.set_page_config(page_title="VYMシンプル指標", page_icon="📈")
+st.title("📈 VYM：現在価格・RSI")
 
-df = yf.download('VYM', period='12mo', interval='1d')
+# データ取得（RSI計算に十分な期間、30営業日程度）
+df = yf.download('VYM', period='2mo', interval='1d')
 
 if df.empty or 'Close' not in df.columns:
     st.error("VYMの価格データ取得に失敗しました。")
 else:
     close = df['Close']
+
+    # RSI計算（14日）
     delta = close.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.rolling(14).mean()
+    avg_loss = loss.rolling(14).mean()
     rs = avg_gain / avg_loss
-    df['RSI'] = 100 - (100 / (1 + rs))
-    df_valid = df['Close','RSI'].dropna()
+    rsi = 100 - (100 / (1 + rs))
 
-    if df_valid.empty:
-        st.warning("有効なRSIやMA50データがまだ揃っていません。もう少し長めの期間を指定すると改善するかもしれません。")
-    else:
-        latest = df_valid.tail(1)
-        close_val = latest['Close'].values[0]
-        rsi_val = latest['RSI'].values[0]
+    # 最新データのみ取得
+    latest_close = close.dropna().iloc[-1]
+    latest_rsi = rsi.dropna().iloc[-1]
 
-        # ここでNaNチェック
-        if any(pd.isna(x) or (isinstance(x, float) and math.isnan(x)) for x in [close_val, rsi_val, ma_val]):
-            st.error("最新データに無効な値（NaN）が含まれています。データ取得期間を延ばしてみてください。")
-        else:
-            st.write(f"💰 **現在の価格**: {close_val:.2f} USD")
-            st.write(f"📊 **RSI (14日)**: {rsi_val:.2f}")
-            
+    st.write(f"💰 **現在の価格**: {latest_close:.2f} USD")
+    st.write(f"📊 **RSI (14日)**: {latest_rsi:.2f}")
