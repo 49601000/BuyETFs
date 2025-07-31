@@ -3,7 +3,6 @@ import yfinance as yf
 import pandas as pd
 import math
 
-
 st.set_page_config(page_title="VYM指標チェック", page_icon="📈")
 st.title("📈 VYM：価格・RSI・50日移動平均")
 
@@ -24,4 +23,4 @@ df = yf.download('VYM', period='12mo', interval='1d')
         else:
             st.write(f"💰 **現在の価格**: {close_val:.2f} USD")
             st.write(f"📊 **RSI (14日)**: {rsi_val:.2f}")
-            st.write(f"📉 **50日移動平均**: {ma_val:.2f}")
+            st.write(f"📉 **50日移動平均**
