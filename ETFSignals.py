@@ -39,6 +39,9 @@ def rate_spike_recent(rates_df):
         return len(recent) >= 30 and 30 <= (recent.iloc[-1] - recent.iloc[0]) <= 50
     except:
         return False
+
+# 関数を呼び出す
+from utils import calculate_yield_avg_1y
 yield_avg_1y = your_custom_yield_calc_function(symbol)
 
 def is_buy_signal(
