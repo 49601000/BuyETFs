@@ -3,7 +3,7 @@ import yfinance as yf
 import pandas as pd
 import math
 
-st.set_page_config(page_title="AAPL RSI", page_icon="🍏")
+st.set_page_config(page_title="7011.T", page_icon="🍏")
 st.title("🍏 AAPL（Apple）RSIのみ表示")
 
 df = yf.download('AAPL', period='2mo', interval='1d')
