@@ -22,4 +22,3 @@ else:
         st.write(f"📊 **RSI (14日)**: {latest['RSI']:.2f}")
         st.write(f"📉 **200日移動平均**: {latest['MA200']:.2f}")
     else:
-       
