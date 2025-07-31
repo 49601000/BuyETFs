@@ -118,13 +118,12 @@ st.markdown(
 
 
 # --- メインループ ---
-for symbol in symbols.keys():
+from utils import calculate_yield_avg_1y  # インポートはループ外で行うのが普通
 
-# 関数を呼び出す(確認用利回り算出)
-from utils import calculate_yield_avg_1y
-
-yield_avg_1y = calculate_yield_avg_1y(symbols)
-
+for symbol in symbols:
+    yield_avg_1y = calculate_yield_avg_1y(symbol)
+    # ここに何らかのロジックを書く（例：結果を保存・シグナル判定など）
+    
     st.subheader(f"🔎 {symbol}")
     etf = yf.Ticker(symbol)
     df = etf.history(period='1y', interval='1d')
