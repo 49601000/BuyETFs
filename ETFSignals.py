@@ -57,3 +57,55 @@ def is_buy_signal(df, symbol, rate_latest, sp500_yield,
             return "🟢 軽度押し目"
 
     return "⏸ 様子見"
+
+
+etf_summary = []
+
+for symbol in symbols:
+    etf = yf.Ticker(symbol)
+    df = etf.history(period='100d', interval='1d')  # 100日分でMA取得
+
+    if df.empty or len(df) < 50:
+        continue
+
+    # 現在価格・前日終値
+    close_today = df['Close'].iloc[-1]
+    close_prev = df['Close'].iloc[-2]
+
+    # RSI
+    rsi_series = compute_rsi(df['Close'])
+    rsi_today = round(rsi_series.iloc[-1], 2)
+
+    # 移動平均
+    ma25 = round(df['Close'].rolling(25).mean().iloc[-1], 2)
+    ma50 = round(df['Close'].rolling(50).mean().iloc[-1], 2)
+
+    # 分配金利回り
+    try:
+        yield_pct = round(etf.info.get('dividendYield', None), 2)
+    except:
+        yield_pct = None
+
+    # 出来高情報
+    vol_latest = df['Volume'].iloc[-1]
+    vol_avg_20 = df['Volume'].rolling(20).mean().iloc[-1]
+
+    # シグナル評価（省略ロジックで簡易表示）
+    signal = is_buy_signal(df, symbol, rate_latest, sp500_yield,
+                           rates_data, len(df) >= 200,
+                           vol_latest, vol_avg_20)
+
+    etf_summary.append({
+        "SYMBOL": symbol,
+        "名称": etf.info.get("shortName", "名称取得不可"),
+        "現在価格": round(close_today, 2),
+        "前日終値": round(close_prev, 2),
+        "RSI": rsi_today,
+        "MA25": ma25,
+        "MA50": ma50,
+        "分配金利回り(%)": yield_pct if yield_pct else "—",
+        "シグナル": signal
+    })
+
+st.subheader("📋 ETFテクニカル・配当・判定一覧")
+st.dataframe(pd.DataFrame(etf_summary))
