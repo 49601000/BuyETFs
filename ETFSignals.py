@@ -111,21 +111,17 @@ for symbol in symbols.keys():
     if not isinstance(df, pd.DataFrame):
         st.error(f"{symbol} のデータ取得に失敗しました（DataFrame ではありません）。")
         continue
-
+        
     # ✅ 空データ確認
     if df.empty:
-        st.error(f"{symbol} のデータが取得できませんでした（空データ）。")
+        st.error(f"{symbol} の株価データが取得できませんでした。")
         continue
-
-    # ✅ 'Close'カラムが存在するか & Series型か
-    close_series = df.get('Close')
-    if close_series is None:
-        st.error(f"{symbol} のデータに Close カラムがありません。")
+    # ✅ 'Close' カラム確認
+    if 'Close' not in df.columns:
+        st.error(f"{symbol} に Close カラムが存在しません。")
         continue
-    if not isinstance(close_series, pd.Series):
-        st.error(f"{symbol} の Close カラムが Series ではありません。")
-        continue
-    if close_series.isnull().all():
+    # ✅ Close データ欠損確認
+    if df['Close'].isnull().all():
         st.warning(f"{symbol} の Close データが全て欠損しています。")
         continue
 
