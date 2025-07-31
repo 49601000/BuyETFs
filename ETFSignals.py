@@ -166,5 +166,5 @@ for symbol in symbols:
     st.write(f"📊 移動平均：20日 = {ma20}｜50日 = {ma50}｜200日 = {ma200}")
     st.write(f"📊 ボリンジャーバンド判定：**{bb_status}**")
 
-    signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data, ma200_available)
+    signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data, ma200_available, yield_avg_1y)
     st.markdown(f"### 判定結果：{signal}")
