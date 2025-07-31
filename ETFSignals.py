@@ -1,47 +1,5 @@
-import streamlit as st
-import pandas as pd
-import yfinance as yf
-
-st.set_page_config(page_title="ETF再投資判定", page_icon="📊")
-st.title("📊 ETF再投資判定")
-
-symbols = {'VYM': 'NYSE', 'JEPQ': 'NASDAQ', 'JEPI': 'NYSE', 'TLT': 'NYSE'}
-
-# --- マクロ指標取得 ---
-vix_data = yf.download('^VIX', period='3mo', interval='1d')
-rates_data = yf.download('^TNX', period='3mo', interval='1d')
-rate_latest = float(rates_data['Close'].dropna().iloc[-1]) if not rates_data.empty else None
-
-# --- 指標計算関数 ---
-def compute_rsi(series, period=14):
-    delta = series.diff()
-    gain = delta.clip(lower=0)
-    loss = -delta.clip(upper=0)
-    avg_gain = gain.rolling(period).mean()
-    avg_loss = loss.rolling(period).mean()
-    rs = avg_gain / avg_loss
-    return 100 - (100 / (1 + rs))
-
-def compute_bollinger_bands(series, period=20, num_std=2):
-    sma = series.rolling(period).mean()
-    std = series.rolling(period).std()
-    return sma + (num_std * std), sma - (num_std * std)
-
-def get_sp500_yield():
-    try:
-        return round(yf.Ticker('SPY').info.get('dividendYield', 1.5), 2)
-    except:
-        return 1.5
-
-def rate_spike_recent(rates_df):
-    try:
-        recent = rates_df['Close'].dropna().iloc[-30:]
-        return len(recent) >= 30 and 30 <= (recent.iloc[-1] - recent.iloc[0]) <= 50
-    except:
-        return False
-
-def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield,
-                  rates_data, ma200_available, yield_avg_1y,
+def is_buy_signal(df, symbol, rate_latest, sp500_yield,
+                  rates_data, ma200_available,
                   vol_latest, vol_avg_20):
 
     latest = df.iloc[-1]
@@ -59,24 +17,23 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield,
     ma200_cond = close <= ma200 if (ma200_available and ma200 is not None) else False
     deviation_pct = ((ma50 - close) / ma50) * 100 if ma50 else 0
     cond_sp_vs_rate = sp500_yield > rate_latest if rate_latest else False
-
     volume_cond = (
         vol_latest > vol_avg_20 * 1.3
         if vol_latest is not None and vol_avg_20 is not None
         else False
     )
 
-    # 判定ロジック
+    # 判定ロジック（分配利回りの条件を全除去）
     if symbol == 'VYM':
-        if (close <= ma75 and rsi < 30 and close <= boll_2sigma and yield_pct > yield_avg_1y + 0.5):
+        if (close <= ma75 and rsi < 30 and close <= boll_2sigma):
             return "🔴 バーゲンレベル"
         elif (close <= ma75 or (rsi < 30 and close <= boll_1_5sigma)):
             return "🟡 中度押し目"
-        elif (close < ma25 * 0.97 and rsi < 35 and close <= boll_1_5sigma and yield_pct > yield_avg_1y + 0.3):
+        elif (close < ma25 * 0.97 and rsi < 35 and close <= boll_1_5sigma):
             return "🟢 軽度押し目"
 
     elif symbol == 'JEPQ':
-        if (close <= ma75 and rsi < 30 and close <= boll_2sigma and yield_pct > 12.0):
+        if (close <= ma75 and rsi < 30 and close <= boll_2sigma):
             return "🔴 バーゲンレベル"
         elif (close <= ma75 or (rsi < 35 and close <= boll_1_5sigma)):
             return "🟡 中度押し目"
@@ -84,11 +41,11 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield,
             return "🟢 軽度押し目"
 
     elif symbol == 'JEPI':
-        if (close <= ma75 and rsi < 30 and close <= boll_2sigma and yield_pct > yield_avg_1y + 0.4):
+        if (close <= ma75 and rsi < 30 and close <= boll_2sigma):
             return "🔴 バーゲンレベル"
         elif (close <= ma75 or (rsi < 40 and close <= boll_1_5sigma and volume_cond)):
             return "🟡 中度押し目"
-        elif (close < ma25 * 0.98 and rsi < 45 and close <= boll_1sigma and yield_pct > yield_avg_1y + 0.2):
+        elif (close < ma25 * 0.98 and rsi < 45 and close <= boll_1sigma):
             return "🟢 軽度押し目"
 
     elif symbol == 'TLT':
@@ -100,73 +57,3 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield,
             return "🟢 軽度押し目"
 
     return "⏸ 様子見"
-
-# --- 全体指標表示 ---
-vix_latest = float(vix_data['Close'].dropna().iloc[-1])
-sp500_yield = get_sp500_yield()
-
-st.markdown(
-    f"🧭 **マクロ指標まとめ**｜VIX指数: {round(vix_latest, 2)}｜10年債金利: {round(rate_latest, 2)} %｜S&P500分配利回り: {sp500_yield} %"
-)
-
-from utils import calculate_yield_avg_1y  # 外部モジュール
-
-for symbol in symbols:
-    yield_avg_1y = calculate_yield_avg_1y(symbol)
-
-    st.subheader(f"🔎 {symbol}")
-    etf = yf.Ticker(symbol)
-    df = etf.history(period='1y', interval='1d')
-
-    if df.empty or 'Close' not in df.columns or df['Close'].dropna().empty:
-        st.warning(f"{symbol} の価格データが取得できません。")
-        continue
-
-    df['RSI'] = compute_rsi(df['Close'])
-    df['BB_upper_1sigma'], df['BB_lower_1sigma'] = compute_bollinger_bands(df['Close'], num_std=1)
-    df['BB_upper_1_5sigma'], df['BB_lower_1_5sigma'] = compute_bollinger_bands(df['Close'], num_std=1.5)
-    df['BB_upper_2sigma'], df['BB_lower_2sigma'] = compute_bollinger_bands(df['Close'], num_std=2)
-    df['MA25'] = df['Close'].rolling(25).mean()
-    df['MA50'] = df['Close'].rolling(50).mean()
-    df['MA75'] = df['Close'].rolling(75).mean()
-    df['MA200'] = df['Close'].rolling(200).mean() if len(df) >= 200 else None
-    ma200_available = len(df) >= 200
-
-    drop_cols = ['RSI', 'MA25', 'MA50', 'MA75', 'BB_lower_1sigma', 'BB_lower_1_5sigma', 'BB_lower_2sigma']
-    if ma200_available:
-        drop_cols.append('MA200')
-    df = df.dropna(subset=drop_cols)
-    if df.empty:
-        st.warning(f"{symbol}: 有効なデータ行が存在しません。")
-        continue
-
-    latest = df.iloc[-1]
-    price = latest['Close']
-    rsi = latest['RSI']
-    bb_status = (
-        "上抜け（買われ過ぎ）" if price > latest['BB_upper_1sigma'] else
-        "下抜け（売られ過ぎ）" if price < latest['BB_lower_1sigma'] else
-        "バンド内"
-    )
-
-    try:
-        yield_pct = round(etf.info.get('dividendYield', None), 2)
-    except:
-        yield_pct = None
-
-    vol_latest = df['Volume'].iloc[-1] if 'Volume' in df.columns and not df['Volume'].empty else None
-    vol_avg_20 = df['Volume'].rolling(20).mean().iloc[-1] if 'Volume' in df.columns and len(df['Volume'].dropna()) >= 20 else None
-    if yield_pct:
-        st.write(f"📎 分配金利回り：{yield_pct} %")
-    else:
-        st.warning("分配金利回り取得不可")
-    st.write(f"📌 Close価格：{round(price,2)}｜📊 RSI：{round(rsi,2)}")
-    ma20 = round(latest['MA20'], 2)
-    ma50 = round(latest['MA50'], 2)
-    ma200 = round(latest['MA200'], 2) if ma200_available else "—（データ不足）"
-    st.write(f"📊 移動平均：20日 = {ma20}｜50日 = {ma50}｜200日 = {ma200}")
-    st.write(f"📊 ボリンジャーバンド判定：**{bb_status}**")
-
-    signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data,
-                  ma200_available, yield_avg_1y, vol_latest, vol_avg_20)
-    st.markdown(f"### 判定結果：{signal}")
