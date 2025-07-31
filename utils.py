@@ -6,7 +6,7 @@ def calculate_yield_avg_1y(symbol):
     etf = yf.Ticker(symbol)
     dividends = etf.dividends
 
-    # ここでインデックスの型を datetime に変換
+    # 🔑 インデックスを datetime 型に変換
     dividends.index = pd.to_datetime(dividends.index)
 
     one_year_ago = pd.Timestamp.today() - pd.DateOffset(years=1)
