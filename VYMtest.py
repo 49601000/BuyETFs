@@ -21,18 +21,24 @@ else:
     rs = avg_gain / avg_loss
     rsi = 100 - (100 / (1 + rs))
 
-    # 最新値取得
+    # 最新のClose
     valid_close = close.dropna()
-    valid_rsi = rsi.dropna()
-    latest_close = valid_close.iloc[-1] if not valid_close.empty else None
-    latest_rsi = valid_rsi.iloc[-1] if not valid_rsi.empty else None
-
-    if latest_close is None or pd.isna(latest_close):
+    if not valid_close.empty:
+        latest_close = valid_close.iloc[-1]
+        if pd.isna(latest_close):
+            st.error("現在の価格データが取得できませんでした。")
+        else:
+            st.write(f"💰 **現在の価格**: {latest_close:.2f} USD")
+    else:
         st.error("現在の価格データが取得できませんでした。")
-    else:
-        st.write(f"💰 **現在の価格**: {latest_close:.2f} USD")
 
-    if latest_rsi is None or pd.isna(latest_rsi):
-        st.error("RSIデータが取得できませんでした。")
+    # 最新のRSI
+    valid_rsi = rsi.dropna()
+    if not valid_rsi.empty:
+        latest_rsi = valid_rsi.iloc[-1]
+        if pd.isna(latest_rsi):
+            st.error("RSIデータが取得できませんでした。")
+        else:
+            st.write(f"📊 **RSI (14日)**: {latest_rsi:.2f}")
     else:
-        st.write(f"📊 **RSI (14日)**: {latest_rsi:.2f}")
+        st.error("RSIデータが取得できませんでした。")
