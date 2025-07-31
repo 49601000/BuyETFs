@@ -149,7 +149,7 @@ for symbol in symbols.keys():
         except KeyError as e:
             st.warning(f"{symbol}: dropna処理に失敗しました（欠損列: {e}）")
             continue
-        else:
+    else:
             st.warning(f"{symbol} の有効な指標列が存在しないため、処理をスキップします。")
             continue
 
