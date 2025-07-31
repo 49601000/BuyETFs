@@ -98,3 +98,58 @@ sp500_yield = get_sp500_yield()
 # 表示
 rate_display = f"{rate_latest:.2f} %" if rate_latest is not None else "取得不可"
 st.markdown(f"🧭 **マクロ指標まとめ**｜VIX指数: {vix_latest}｜10年債金利: {rate_display}｜S&P500分配利回り: {sp500_yield} %")
+
+# === ETFデータ一覧の構築 ===
+etf_summary = []
+
+for symbol, name in symbols.items():
+    etf = yf.Ticker(symbol)
+    df = etf.history(period='1y', interval='1d')
+
+    if df.empty or len(df) < 50:
+        continue
+
+    # 指標計算
+    close_today = df['Close'].iloc[-1]
+    close_prev = df['Close'].iloc[-2]
+    rsi_series = compute_rsi(df['Close'])
+    rsi_today = round(rsi_series.iloc[-1], 2)
+    df['MA25'] = df['Close'].rolling(25).mean()
+    df['MA50'] = df['Close'].rolling(50).mean()
+    ma25 = round(df['MA25'].iloc[-1], 2)
+    ma50 = round(df['MA50'].iloc[-1], 2)
+    df['BB_upper_1sigma'], df['BB_lower_1sigma'] = compute_bollinger_bands(df['Close'], num_std=1)
+    df['BB_upper_1_5sigma'], df['BB_lower_1_5sigma'] = compute_bollinger_bands(df['Close'], num_std=1.5)
+    df['BB_upper_2sigma'], df['BB_lower_2sigma'] = compute_bollinger_bands(df['Close'], num_std=2)
+
+    # 出来高処理
+    vol_latest = df['Volume'].iloc[-1]
+    vol_avg_20 = df['Volume'].rolling(20).mean().iloc[-1]
+
+    # 分配金利回り
+    try:
+        yield_pct = round(etf.info.get('dividendYield', None), 2)
+    except:
+        yield_pct = None
+
+    # シグナル判定
+    signal = is_buy_signal(df, symbol, rate_latest, sp500_yield,
+                           vol_latest, vol_avg_20)
+
+    etf_summary.append({
+        "SYMBOL": symbol,
+        "ETF名称": name,
+        "現在価格": round(close_today, 2),
+        "前日終値": round(close_prev, 2),
+        "RSI": rsi_today,
+        "MA25": ma25,
+        "MA50": ma50,
+        "分配利回り(%)": yield_pct if yield_pct else "—",
+        "シグナル": signal
+    })
+
+# === 表示 ===
+st.subheader("📋 ETF投資判定一覧")
+st.dataframe(pd.DataFrame(etf_summary))
+
+
