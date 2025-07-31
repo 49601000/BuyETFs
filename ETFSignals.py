@@ -11,7 +11,13 @@ symbols = {'VYM': 'NYSE', 'JEPQ': 'NASDAQ', 'JEPI': 'NYSE', 'TLT': 'NYSE'}
 # --- マクロ指標取得 ---
 vix_data = yf.download('^VIX', period='3mo', interval='1d')
 rates_data = yf.download('^TNX', period='3mo', interval='1d')
-rate_latest = float(rates_data['Close'].dropna().iloc[-1])
+
+# 金利の最新値（エラー回避付き）
+rate_latest = None
+try:
+    rate_latest = float(rates_data['Close'].dropna().iloc[-1])
+except Exception as e:
+    st.warning(f"金利データ取得失敗: {e}")
 
 # --- 指標計算関数 ---
 def compute_rsi(series, period=14):
@@ -39,7 +45,7 @@ def get_dividend_yield(symbol):
         print(f"利回り取得エラー: {e}")
     return None
 
-# ✅ S&P500 は SPY の利回りを代用
+# ✅ SPY利回り：失敗したら fallback 値を返す
 def get_sp500_yield():
     try:
         ticker = yf.Ticker('SPY')
@@ -49,14 +55,17 @@ def get_sp500_yield():
             return round(dy * 100, 2)
     except Exception as e:
         print(f"SPY利回り取得エラー: {e}")
-    return None
+    return 1.5  # fallback 値として1.5%
 
 def rate_spike_recent(rates_df):
-    recent = rates_df['Close'].dropna().iloc[-30:]
-    if len(recent) < 30:
+    try:
+        recent = rates_df['Close'].dropna().iloc[-30:]
+        if len(recent) < 30:
+            return False
+        delta = float(recent.iloc[-1] - recent.iloc[0])
+        return 30 <= delta <= 50
+    except Exception:
         return False
-    delta = float(recent.iloc[-1] - recent.iloc[0])
-    return 30 <= delta <= 50
 
 def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data):
     latest = df.iloc[-1]
@@ -66,11 +75,11 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data):
     ma200 = latest['MA200']
     deviation_pct = ((ma50 - close) / ma50) * 100
 
-    cond_sp_vs_rate = isinstance(sp500_yield, (int, float)) and sp500_yield > rate_latest
+    cond_sp_vs_rate = isinstance(sp500_yield, (int, float)) and rate_latest is not None and sp500_yield > rate_latest
 
     if symbol == 'VYM':
         cond = (rsi < 40) or (close <= ma200) or (
-            isinstance(yield_pct, (int, float)) and (1.0 <= (yield_pct - rate_latest) <= 1.5))
+            isinstance(yield_pct, (int, float)) and rate_latest is not None and (1.0 <= (yield_pct - rate_latest) <= 1.5))
         if cond:
             return '🔔 押し目買いチャンス'
     elif symbol == 'JEPQ':
@@ -89,10 +98,7 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data):
 
 # --- S&P500（SPY）の分配金利回り ---
 sp500_yield = get_sp500_yield()
-if sp500_yield:
-    st.write(f"📰 **S&P500（SPY代用）分配金利回り**：{sp500_yield} %")
-else:
-    st.warning("S&P500（SPY）の分配金利回りを取得できませんでした。")
+st.write(f"📰 **S&P500（SPY代用）分配金利回り**：{sp500_yield} %")
 
 # --- メイン処理 ---
 for symbol in symbols.keys():
@@ -111,13 +117,15 @@ for symbol in symbols.keys():
         st.error(f"{symbol} のデータが取得できませんでした（空データ）。")
         continue
 
-    # ✅ カラム存在確認
-    if 'Close' not in df.columns:
+    # ✅ 'Close'カラムが存在するか & Series型か
+    close_series = df.get('Close')
+    if close_series is None:
         st.error(f"{symbol} のデータに Close カラムがありません。")
         continue
-
-    # ✅ Close全欠損確認
-    if df['Close'].isnull().all():
+    if not isinstance(close_series, pd.Series):
+        st.error(f"{symbol} の Close カラムが Series ではありません。")
+        continue
+    if close_series.isnull().all():
         st.warning(f"{symbol} の Close データが全て欠損しています。")
         continue
 
@@ -133,7 +141,7 @@ for symbol in symbols.keys():
     price = latest['Close']
     rsi = latest['RSI']
 
-    # --- BB判定 ---
+    # --- ボリンジャーバンド判定 ---
     if price > latest['UpperBand']:
         bb_status = "上抜け（買われ過ぎ）"
     elif price < latest['LowerBand']:
