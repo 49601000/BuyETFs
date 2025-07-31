@@ -123,12 +123,11 @@ for symbol in symbols.keys():
     else:
         st.warning("分配金利回り取得不可")
 
-    st.write(f"📌 Close価格：{round(price,2)}")
+    st.write(f"📌 Close価格：{round(price,2)}"｜f"📊 RSI：{round(rsi,2)}")
     ma20 = round(latest['MA20'], 2)
     ma50 = round(latest['MA50'], 2)
     ma200 = round(latest['MA200'], 2) if ma200_available else "—（データ不足）"
     st.write(f"📊 移動平均：20日 = {ma20}｜50日 = {ma50}｜200日 = {ma200}")
-    st.write(f"📊 RSI：{round(rsi,2)}")
     st.write(f"📊 ボリンジャーバンド判定：**{bb_status}**")
 
     signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data, ma200_available)
