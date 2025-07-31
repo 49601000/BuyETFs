@@ -132,19 +132,22 @@ def max_buy_price(df, symbol):
 
     return {}
  # 購入上限額
-   def select_price_by_signal(signal, price_info):
+def select_price_by_signal(signal, price_info):
     levels = ["バーゲン", "中度押し目", "軽度押し目"]
     current_level = extract_signal_level(signal)
 
     if current_level in levels:
         idx = levels.index(current_level)
-        # 該当シグナルの価格があればそれを返す
+        # シグナルに対応する価格があるならそれを返す
+        
         if current_level in price_info:
             return price_info[current_level]
-        # 該当がなければ1段階上の価格（より緩い条件）
+        # 価格がなければ、より緩い条件（1段階上）を探す
+        
         elif idx + 1 < len(levels) and levels[idx + 1] in price_info:
             return price_info[levels[idx + 1]]
-    # シグナルがない場合や価格が見つからない場合は軽度押し目価格
+    # シグナルが不明な場合や価格が見つからない場合は、軽度押し目価格を使う
+    
     return price_info.get("軽度押し目", "—")
        
 # === マクロ指標 ===
