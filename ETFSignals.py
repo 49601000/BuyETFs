@@ -190,7 +190,21 @@ for symbol, name in symbols.items():
         st.warning(f"{symbol} の分配利回り取得エラー: {e}")
         yield_pct = None
     # 購入上限額
-    price_info = max_buy_price(df, symbol)
+    def select_price_by_signal(signal, price_info):
+    levels = ["バーゲン", "中度押し目", "軽度押し目"]
+    current_level = extract_signal_level(signal)
+
+    if current_level in levels:
+        idx = levels.index(current_level)
+        # シグナルが存在する場合はその価格
+        if current_level in price_info:
+            return price_info[current_level]
+        # 存在しなければ上位の価格（＝より緩い条件）を表示
+        elif idx + 1 < len(levels) and levels[idx + 1] in price_info:
+            return price_info[levels[idx + 1]]
+    else:
+        # 様子見などの場合は軽度押し目価格を採用
+        return price_info.get("軽度押し目", "—")
 
     # シグナル判定（マクロ指標は事前に rate_latest, sp500_yield を取得済み）
     signal = is_buy_signal(df, symbol, rate_latest, sp500_yield, vol_latest, vol_avg_20)
@@ -200,7 +214,7 @@ for symbol, name in symbols.items():
         "シグナル": signal,
         "分配利回り(%)": yield_pct if yield_pct else "—",
         "現在価格": round(close_today, 2),
-        "買い増し上限": price_info,
+        "買い増し上限": round(price_info, 2),
         "前日終値": round(close_prev, 2),
         "RSI": rsi_today,
         "MA25": ma25,
