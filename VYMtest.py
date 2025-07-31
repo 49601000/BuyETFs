@@ -23,7 +23,7 @@ symbols = {'VYM': 'NYSE', 'JEPQ': 'NASDAQ', 'JEPI': 'NYSE', 'TLT': 'NYSE'}
 for ticker in symbols.keys():
     st.markdown(f"### 📌 {ticker}")
     etf = yf.Ticker(ticker)
-    df = etf.history(period="3mo", interval="1d")
+    df = etf.history(period="1y", interval="1d")
     df['RSI'] = calculate_rsi(df)
 
     st.dataframe(df[['Close', 'RSI']].dropna())
