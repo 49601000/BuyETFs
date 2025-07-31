@@ -7,6 +7,7 @@ st.title("📊 ETF再投資判定")
 
 symbols = {'VYM': 'NYSE', 'JEPQ': 'NASDAQ', 'JEPI': 'NYSE', 'TLT': 'NYSE'}
 
+# --- 安全なdropna対象列の判定関数 ---
 def get_safe_drop_cols(df, candidate_cols):
     valid = []
     for col in candidate_cols:
@@ -15,9 +16,9 @@ def get_safe_drop_cols(df, candidate_cols):
             if non_nan_count > 0:
                 valid.append(col)
             else:
-                st.info(f"🔍 {col}: 列は存在するが全て欠損")
+                st.info(f"🟡 {col}: 列はあるが全て欠損")
         else:
-            st.info(f"❌ {col}: DataFrameに存在しない列")
+            st.info(f"🔴 {col}: 列が DataFrame に存在しません")
     return valid
 
 # --- マクロ指標取得 ---
@@ -25,7 +26,7 @@ vix_data = yf.download('^VIX', period='3mo', interval='1d')
 rates_data = yf.download('^TNX', period='3mo', interval='1d')
 rate_latest = float(rates_data['Close'].dropna().iloc[-1]) if not rates_data.empty else None
 
-# --- 関数定義 ---
+# --- 各種指標計算関数 ---
 def compute_rsi(series, period=14):
     delta = series.diff()
     gain = delta.clip(lower=0)
@@ -84,10 +85,11 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data, m
 
     return '🔔 押し目買いチャンス' if cond else '⏸ 様子見'
 
-# --- メイン処理開始 ---
+# --- S&P500利回り表示 ---
 sp500_yield = get_sp500_yield()
 st.write(f"📰 **S&P500（SPY代用）分配金利回り**：{sp500_yield} %")
 
+# --- メインループ ---
 for symbol in symbols.keys():
     st.subheader(f"🔎 {symbol}")
     df = yf.download(symbol, period='12mo', interval='1d')
@@ -96,7 +98,6 @@ for symbol in symbols.keys():
         st.warning(f"{symbol} の価格データが取得できません。")
         continue
 
-    # --- 指標計算 ---
     df['RSI'] = compute_rsi(df['Close'])
     df['UpperBand'], df['LowerBand'] = compute_bollinger_bands(df['Close'])
     df['MA20'] = df['Close'].rolling(20).mean()
@@ -105,27 +106,28 @@ for symbol in symbols.keys():
     if ma200_available:
         df['MA200'] = df['Close'].rolling(200).mean()
 
-    # --- dropnaの安全処理 ---
     base_cols = ['RSI', 'UpperBand', 'LowerBand', 'MA20', 'MA50']
     if ma200_available:
         base_cols.append('MA200')
+
     drop_cols = get_safe_drop_cols(df, base_cols)
+    st.write(f"{symbol}: 有効なdropna対象列 → {drop_cols}")
 
     if not drop_cols:
-        st.warning(f"{symbol}: 有効な指標列が存在しないためスキップします。")
+        st.warning(f"{symbol}: 有効な指標列がないためスキップ")
         continue
 
     try:
         df_valid = df.dropna(subset=drop_cols)
         if df_valid.empty:
-            st.warning(f"{symbol}: 有効なデータ行が存在しません。")
+            st.warning(f"{symbol}: 有効データ行が存在しません。")
             continue
         df = df_valid
     except KeyError as e:
         st.error(f"{symbol}: dropnaエラー: {e}")
         continue
 
-    # --- 最新データの表示 ---
+    # --- 判定ロジック表示 ---
     latest = df.iloc[-1]
     price = latest['Close']
     rsi = latest['RSI']
@@ -137,14 +139,17 @@ for symbol in symbols.keys():
 
     yield_pct = get_dividend_yield(symbol)
     if yield_pct:
-        st.write(f"**分配金利回り**：{yield_pct} %")
+        st.write(f"📎 分配金利回り：{yield_pct} %")
     else:
-        st.warning("分配金利回りを取得できません。")
+        st.warning("分配金利回り取得不可")
 
     st.write(f"📌 Close価格：{round(price,2)}")
     st.write(f"📈 20日移動平均：{round(latest['MA20'],2)}")
     st.write(f"📉 50日移動平均：{round(latest['MA50'],2)}")
-    st.write(f"📉 200日移動平均：{round(latest['MA200'],2)}" if ma200_available else "📉 200日移動平均：—（データ不足）")
+    if ma200_available:
+        st.write(f"📉 200日移動平均：{round(latest['MA200'],2)}")
+    else:
+        st.write("📉 200日移動平均：—（データ不足）")
     st.write(f"📊 RSI：{round(rsi,2)}")
     st.write(f"📊 ボリンジャーバンド判定：**{bb_status}**")
 
