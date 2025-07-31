@@ -98,7 +98,8 @@ def is_buy_signal(df, symbol, rate_latest, sp500_yield, vol_latest, vol_avg_20):
             return "🟢 軽度押し目"
 
     return "💤 様子見"
-#買い増し基準となる価格の目安
+    
+#シグナルごとの買い増し基準となる価格の目安
 def max_buy_price(df, symbol):
     latest = df.iloc[-1]
     ma25 = latest['MA25']
@@ -130,6 +131,8 @@ def max_buy_price(df, symbol):
         }
 
     return {}
+price_info = max_buy_price(df, symbol)
+
 # === マクロ指標 ===
 # VIXの最新値をfloat型で抽出
 vix_data = get_vix_data()
@@ -197,7 +200,7 @@ for symbol, name in symbols.items():
         "シグナル": signal,
         "分配利回り(%)": yield_pct if yield_pct else "—",
         "現在価格": round(close_today, 2),
-        "買い増し上限":max_buy_price,
+        "買い増し上限": price_info,
         "前日終値": round(close_prev, 2),
         "RSI": rsi_today,
         "MA25": ma25,
