@@ -82,7 +82,8 @@ def is_buy_signal(df, symbol, rate_latest, sp500_yield,
 # === マクロ指標 ===
 # VIXの最新値をfloat型で抽出
 vix_data = get_vix_data()
-vix_latest = round(vix_data['Close'].dropna().iloc[-1], 2)
+vix_value = vix_data['Close'].dropna().iloc[-1]
+vix_latest = round(float(vix_value), 2)
 # 10年債金利（^TNX）の最新値をfloat型で抽出
 rates_data = get_rates_data()
 try:
