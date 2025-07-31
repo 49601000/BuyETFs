@@ -58,9 +58,11 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data,
     # 安全な条件構築（Noneチェック）
     ma200_cond = close <= ma200 if (ma200_available and ma200 is not None) else False
     deviation_pct = ((ma50 - close) / ma50) * 100 if ma50 else 0
-    cond_sp_vs_rate = sp500_yield > rate_latest if rate_latest else False
-    volume_cond = vol_latest > vol_avg_20 * 1.3 if (vol_avg_20 and vol_latest) else False
-
+    cond_sp_vs_rate = sp500_yield > rate_latest if rate_latest else Falsevolume_cond = (
+    vol_latest > vol_avg_20 * 1.3
+    if vol_latest is not None and vol_avg_20 is not None
+    else False
+)
     # ETFごとの判定ロジック
     if symbol == 'VYM':
         if (close <= ma75 and rsi < 30 and close <= boll_2sigma and yield_pct > yield_avg_1y + 0.5):
