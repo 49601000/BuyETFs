@@ -7,6 +7,20 @@ st.title("📊 ETF再投資判定")
 
 symbols = {'VYM': 'NYSE', 'JEPQ': 'NASDAQ', 'JEPI': 'NYSE', 'TLT': 'NYSE'}
 
+# --- 安全な欠損列チェック関数 ---
+def get_valid_drop_cols(df, candidate_cols):
+    valid_cols = []
+    for col in candidate_cols:
+        if col in df.columns:
+            non_nan_count = df[col].dropna().shape[0]
+            if non_nan_count > 0:
+                valid_cols.append(col)
+            else:
+                st.info(f"{col} は存在するが全て欠損しています。")
+        else:
+            st.info(f"{col} は DataFrame に存在しません。")
+    return valid_cols
+
 # --- マクロ指標取得 ---
 vix_data = yf.download('^VIX', period='3mo', interval='1d')
 if vix_data.empty:
@@ -103,6 +117,7 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data, m
 sp500_yield = get_sp500_yield()
 st.write(f"📰 **S&P500（SPY代用）分配金利回り**：{sp500_yield} %")
 
+# --- 各ETFごとの判定処理 ---
 for symbol in symbols.keys():
     st.subheader(f"🔎 {symbol}")
     df = yf.download(symbol, period='12mo', interval='1d')
@@ -111,7 +126,6 @@ for symbol in symbols.keys():
         st.warning(f"{symbol} の価格データが取得できませんでした。")
         continue
 
-    # --- 指標計算 ---
     df['RSI'] = compute_rsi(df['Close'])
     df['UpperBand'], df['LowerBand'] = compute_bollinger_bands(df['Close'])
     df['MA20'] = df['Close'].rolling(20).mean()
@@ -122,26 +136,27 @@ for symbol in symbols.keys():
     else:
         st.info(f"{symbol} は200日移動平均を計算するほどのデータがありません。")
 
-    # --- 指標列の欠損チェック ---
     base_cols = ['RSI', 'UpperBand', 'LowerBand', 'MA20', 'MA50']
     if ma200_available:
         base_cols.append('MA200')
 
-    drop_cols = [col for col in base_cols if col in df.columns and df[col].dropna().shape[0] > 0]
-
-    st.write(f"{symbol}: 有効な指標列: {drop_cols}")
+    drop_cols = get_valid_drop_cols(df, base_cols)
     if not drop_cols:
-        st.warning(f"{symbol} の有効な指標列が存在しません。")
+        st.warning(f"{symbol}: 有効な指標列がまったく存在しません。スキップします。")
         continue
 
-    df_valid = df.dropna(subset=drop_cols)
+    try:
+        df_valid = df.dropna(subset=drop_cols)
+    except KeyError as e:
+        st.warning(f"{symbol}: dropna 処理に失敗しました: {e}")
+        continue
+
     if df_valid.empty:
-        st.warning(f"{symbol}: 有効な指標データ行が存在しないため、スキップします。")
+        st.warning(f"{symbol}: 有効な行が見つかりません。")
         continue
     else:
         df = df_valid
 
-    # --- 最新データの表示 ---
     latest = df.iloc[-1]
     price = latest['Close']
     rsi = latest['RSI']
@@ -160,7 +175,10 @@ for symbol in symbols.keys():
     st.write(f"📌 Close価格：{round(price,2)}")
     st.write(f"📈 20日移動平均：{round(latest['MA20'],2)}")
     st.write(f"📉 50日移動平均：{round(latest['MA50'],2)}")
-    st.write(f"📉 200日移動平均：{round(latest['MA200'],2)}" if ma200_available else "📉 200日移動平均：—（データ不足）")
+    if ma200_available:
+        st.write(f"📉 200日移動平均：{round(latest['MA200'],2)}")
+    else:
+        st.write("📉 200日移動平均：—（データ不足）")
     st.write(f"📊 RSI：{round(rsi,2)}")
     st.write(f"📊 ボリンジャーバンド判定：**{bb_status}**")
 
