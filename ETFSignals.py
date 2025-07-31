@@ -6,10 +6,10 @@ st.set_page_config(page_title="ETF再投資判定", page_icon="📊")
 st.title("📊 ETF再投資判定ダッシュボード")
 
 symbols = {
-    'VYM': '高配当株ETF',
-    'JEPQ': 'ナスダック連動カバードコールETF',
-    'JEPI': 'S&P500採用銘柄カバードコールETF',
-    'TLT': '米国長期債ETF'
+    'VYM': 'バンガード・\n米国高配当株式ETF',
+    'JEPQ': 'JPモルガン・\nナスダック米国株式・\nプレミアム・インカムETF',
+    'JEPI': 'JPモルガン・\n米国株式・\nプレミアム・インカムETF',
+    'TLT': 'iシェアーズ\n米国債20年超ETF'
 }
 
 # === テクニカル指標関数 ===
@@ -237,6 +237,6 @@ for symbol, name in symbols.items():
 
 # === 表示 ===
 st.subheader("📋 ETF投資判定一覧")
-st.dataframe(pd.DataFrame(etf_summary))
+st.table(pd.DataFrame(etf_summary))
 
 
