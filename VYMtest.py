@@ -15,8 +15,6 @@ else:
     delta = close.diff()
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
-    avg_gain = gain.rolling(14).mean()
-    avg_loss = loss.rolling(14).mean()
     rs = avg_gain / avg_loss
     df['RSI'] = 100 - (100 / (1 + rs))
     df['MA50'] = close.rolling(50).mean()
@@ -28,7 +26,6 @@ else:
         latest = df_valid.tail(1)
         close_val = latest['Close'].values[0]
         rsi_val = latest['RSI'].values[0]
-        ma_val = latest['MA50'].values[0]
 
         # ここでNaNチェック
         if any(pd.isna(x) or (isinstance(x, float) and math.isnan(x)) for x in [close_val, rsi_val, ma_val]):
@@ -36,5 +33,4 @@ else:
         else:
             st.write(f"💰 **現在の価格**: {close_val:.2f} USD")
             st.write(f"📊 **RSI (14日)**: {rsi_val:.2f}")
-            st.write(f"📉 **50日移動平均**: {ma_val:.2f}")
             
