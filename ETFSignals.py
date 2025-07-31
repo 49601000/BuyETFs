@@ -189,6 +189,7 @@ for symbol, name in symbols.items():
     except Exception as e:
         st.warning(f"{symbol} の分配利回り取得エラー: {e}")
         yield_pct = None
+
     # 購入上限額
     def select_price_by_signal(signal, price_info):
     levels = ["バーゲン", "中度押し目", "軽度押し目"]
