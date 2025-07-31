@@ -2,14 +2,14 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 
-st.set_page_config(page_title="VYMシンプル指標", page_icon="📈")
-st.title("📈 VYM：現在価格・RSI")
+st.set_page_config(page_title="AAPLシンプル指標", page_icon="🍏")
+st.title("🍏 AAPL：現在価格・RSI")
 
 # データ取得
-df = yf.download('VYM', period='2mo', interval='1d')
+df = yf.download('AAPL', period='2mo', interval='1d')
 
 if df.empty or 'Close' not in df.columns:
-    st.error("VYMの価格データ取得に失敗しました。")
+    st.error("AAPLの価格データ取得に失敗しました。")
 else:
     close = df['Close']
 
