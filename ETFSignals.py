@@ -112,40 +112,33 @@ for symbol, name in symbols.items():
     # 指標計算
     close_today = df['Close'].iloc[-1]
     close_prev = df['Close'].iloc[-2]
-# === データの前提: df は対象ETFの OHLCV データ、etf は yfinance.Ticker(symbol) ===
-
-# RSI計算して格納
-rsi_series = compute_rsi(df['Close'])
-df['RSI'] = rsi_series
-rsi_today = round(rsi_series.iloc[-1], 2)  # 参考として保持（表示などに使うなら）
-
-# 移動平均線を格納
-df['MA25'] = df['Close'].rolling(25).mean()
-df['MA50'] = df['Close'].rolling(50).mean()
-df['MA75'] = df['Close'].rolling(75).mean()
-
-# MAの最新値（任意で使う場合）
-ma25 = round(df['MA25'].iloc[-1], 2)
-ma50 = round(df['MA50'].iloc[-1], 2)
-ma75 = round(df['MA75'].iloc[-1], 2)
-
-# ボリンジャーバンドを格納（1σ, 1.5σ, 2σ）
-df['BB_upper_1sigma'], df['BB_lower_1sigma'] = compute_bollinger_bands(df['Close'], num_std=1)
-df['BB_upper_1_5sigma'], df['BB_lower_1_5sigma'] = compute_bollinger_bands(df['Close'], num_std=1.5)
-df['BB_upper_2sigma'], df['BB_lower_2sigma'] = compute_bollinger_bands(df['Close'], num_std=2)
-
-# 出来高関連
-vol_latest = df['Volume'].iloc[-1]
-vol_avg_20 = df['Volume'].rolling(20).mean().iloc[-1]
-
-# 分配利回りの取得（etf.info から）
-try:
-    yield_pct = round(etf.info.get('dividendYield', None), 2)
-except:
+    # RSI計算して格納
+    rsi_series = compute_rsi(df['Close'])
+    df['RSI'] = rsi_series
+    rsi_today = round(rsi_series.iloc[-1], 2)  # 参考として保持（表示などに使うなら）
+    # 移動平均線を格納
+    df['MA25'] = df['Close'].rolling(25).mean()
+    df['MA50'] = df['Close'].rolling(50).mean()
+    df['MA75'] = df['Close'].rolling(75).mean()
+    # MAの最新値（任意で使う場合）
+    ma25 = round(df['MA25'].iloc[-1], 2)
+    ma50 = round(df['MA50'].iloc[-1], 2)
+    ma75 = round(df['MA75'].iloc[-1], 2)
+    # ボリンジャーバンドを格納（1σ, 1.5σ, 2σ）
+    df['BB_upper_1sigma'], df['BB_lower_1sigma'] = compute_bollinger_bands(df['Close'], num_std=1)
+    df['BB_upper_1_5sigma'], df['BB_lower_1_5sigma'] = compute_bollinger_bands(df['Close'], num_std=1.5)
+    df['BB_upper_2sigma'], df['BB_lower_2sigma'] = compute_bollinger_bands(df['Close'], num_std=2)
+    # 出来高関連
+    vol_latest = df['Volume'].iloc[-1]
+    vol_avg_20 = df['Volume'].rolling(20).mean().iloc[-1]
+    # 分配利回りの取得（etf.info から）
+    try:
+        yield_pct = round(etf.info.get('dividendYield', None), 2)
+        except:
     yield_pct = None
+    # シグナル判定（マクロ指標は事前に rate_latest, sp500_yield を取得済み）
 
-# シグナル判定（マクロ指標は事前に rate_latest, sp500_yield を取得済み）
-signal = is_buy_signal(df, symbol, rate_latest, sp500_yield, vol_latest, vol_avg_20)
+    signal = is_buy_signal(df, symbol, rate_latest, sp500_yield, vol_latest, vol_avg_20)
     etf_summary.append({
         "SYMBOL": symbol,
         "ETF名称": name,
