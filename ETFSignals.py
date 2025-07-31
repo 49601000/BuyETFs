@@ -7,9 +7,14 @@ st.title("📊 ETF再投資判定")
 
 symbols = {'VYM': 'NYSE', 'JEPQ': 'NASDAQ', 'JEPI': 'NYSE', 'TLT': 'NYSE'}
 
-# --- マクロ指標取得 ---
+# --- マクロ指標取得（安全化） ---
 vix_data = yf.download('^VIX', period='3mo', interval='1d')
+if vix_data.empty:
+    st.warning("⚠️ VIXデータが取得できませんでした。")
+
 rates_data = yf.download('^TNX', period='3mo', interval='1d')
+if rates_data.empty:
+    st.warning("⚠️ 金利データ（TNX）の取得に失敗しました。")
 
 # --- 金利の最新値取得 ---
 rate_latest = None
@@ -68,7 +73,6 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data, m
     ma50 = latest['MA50']
     deviation_pct = ((ma50 - close) / ma50) * 100
 
-    # MA200が存在する場合のみ使う
     ma200_cond = False
     if ma200_available:
         ma200 = latest['MA200']
@@ -115,15 +119,13 @@ for symbol in symbols.keys():
     df['MA20'] = df['Close'].rolling(20).mean()
     df['MA50'] = df['Close'].rolling(50).mean()
 
-    # MA200は期間が不足していればスキップ
-    if len(df) >= 200:
+    ma200_available = len(df) >= 200
+    if ma200_available:
         df['MA200'] = df['Close'].rolling(200).mean()
-        ma200_available = True
     else:
-        ma200_available = False
         st.info(f"{symbol} は200日移動平均を計算するほどのデータがありません。")
 
-    # --- 必要な指標列が揃っているか確認 ---
+    # --- 安全な dropna 処理 ---
     base_cols = ['RSI', 'UpperBand', 'LowerBand', 'MA20', 'MA50']
     if ma200_available:
         base_cols.append('MA200')
@@ -133,7 +135,9 @@ for symbol in symbols.keys():
         st.warning(f"{symbol} の指標列が不足しています: {missing_cols}")
         continue
 
-    df = df.dropna(subset=base_cols)
+    valid_cols = [col for col in base_cols if col in df.columns]
+    df = df.dropna(subset=valid_cols)
+
     if df.empty:
         st.warning(f"{symbol} の有効な指標データが取得できませんでした。")
         continue
@@ -141,7 +145,6 @@ for symbol in symbols.keys():
     latest = df.iloc[-1]
     price = latest['Close']
     rsi = latest['RSI']
-
     bb_status = (
         "上抜け（買われ過ぎ）" if price > latest['UpperBand'] else
         "下抜け（売られ過ぎ）" if price < latest['LowerBand'] else
