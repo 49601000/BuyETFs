@@ -27,6 +27,15 @@ def compute_bollinger_bands(series, period=20, num_std=2):
     std = series.rolling(period).std()
     return sma + (num_std * std), sma - (num_std * std)
 
+# VIXデータの取得（例：直近3ヶ月）
+def get_vix_data():
+    try:
+        return yf.download("^VIX", period="3mo", interval="1d")
+    except Exception as e:
+        st.warning(f"VIXデータの取得に失敗しました: {e}")
+        return pd.DataFrame()
+
+
 # === S&P500分配利回り取得 ===
 def get_sp500_yield():
     try:
