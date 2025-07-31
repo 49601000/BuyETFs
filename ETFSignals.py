@@ -97,3 +97,7 @@ sp500_yield = get_sp500_yield()
 # 表示
 rate_display = f"{rate_latest:.2f} %" if rate_latest is not None else "取得不可"
 st.markdown(f"🧭 **マクロ指標まとめ**｜VIX指数: {vix_latest}｜10年債金利: {rate_display}｜S&P500分配利回り: {sp500_yield} %")
+
+
+st.write("📥 取得した10年債金利データ（確認用）:")
+st.dataframe(rates_data.tail())
