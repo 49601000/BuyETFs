@@ -40,7 +40,18 @@ def rate_spike_recent(rates_df):
     except:
         return False
 
-def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data, ma200_available, vol_avg_20=None, vol_latest=None, yield_avg_1y=None):
+def is_buy_signal(
+    df,
+    symbol,
+    rate_latest,
+    yield_pct,
+    sp500_yield,
+    rates_data,
+    ma200_available,
+    vol_avg_20=None,
+    vol_latest=None,
+    yield_avg_1y=None
+):
     latest = df.iloc[-1]
     close = latest['Close']
     rsi = latest['RSI']
@@ -48,37 +59,41 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data, m
     ma50 = latest.get('MA50')
     ma75 = latest.get('MA75')
     ma200 = latest.get('MA200')
-    boll_1σ = latest.get('BB_lower_1sigma')
-    boll_1_5σ = latest.get('BB_lower_1_5sigma')
-    boll_2σ = latest.get('BB_lower_2sigma')
+    boll_1sigma = latest.get('BB_lower_1sigma')
+    boll_1_5sigma = latest.get('BB_lower_1_5sigma')
+    boll_2sigma = latest.get('BB_lower_2sigma')
 
+    # 安全な条件構築（Noneチェック）
     ma200_cond = close <= ma200 if (ma200_available and ma200 is not None) else False
     deviation_pct = ((ma50 - close) / ma50) * 100 if ma50 else 0
     cond_sp_vs_rate = sp500_yield > rate_latest if rate_latest else False
     volume_cond = vol_latest > vol_avg_20 * 1.3 if (vol_avg_20 and vol_latest) else False
 
-    # ETFごとの条件分岐
+    # ETFごとの判定ロジック
     if symbol == 'VYM':
-        if close <= ma75 and rsi < 30 and close <= boll_2σ and yield_pct > yield_avg_1y + 0.5:
+        if (close <= ma75 and rsi < 30 and close <= boll_2sigma and yield_pct > yield_avg_1y + 0.5):
             return "🔴 バーゲンレベル"
-        elif close <= ma75 or (rsi < 30 and close <= boll_1_5σ):
+        elif (close <= ma75 or (rsi < 30 and close <= boll_1_5sigma)):
             return "🟡 中度押し目"
-        elif close < ma25 * 0.97 and rsi < 35 and close <= boll_1_5σ and yield_pct > yield_avg_1y + 0.3:
+        elif (close < ma25 * 0.97 and rsi < 35 and close <= boll_1_5sigma and yield_pct > yield_avg_1y + 0.3):
             return "🟢 軽度押し目"
+
     elif symbol == 'JEPQ':
-        if close <= ma75 and rsi < 30 and close <= boll_2σ and yield_pct > 12.0:
+        if (close <= ma75 and rsi < 30 and close <= boll_2sigma and yield_pct > 12.0):
             return "🔴 バーゲンレベル"
-        elif close <= ma75 or (rsi < 35 and close <= boll_1_5σ):
+        elif (close <= ma75 or (rsi < 35 and close <= boll_1_5sigma)):
             return "🟡 中度押し目"
-        elif close < ma25 * 0.97 and rsi < 40 and close <= boll_1σ and volume_cond:
+        elif (close < ma25 * 0.97 and rsi < 40 and close <= boll_1sigma and volume_cond):
             return "🟢 軽度押し目"
+
     elif symbol == 'JEPI':
-        if close <= ma75 and rsi < 30 and close <= boll_2σ and yield_pct > yield_avg_1y + 0.4:
+        if (close <= ma75 and rsi < 30 and close <= boll_2sigma and yield_pct > yield_avg_1y + 0.4):
             return "🔴 バーゲンレベル"
-        elif close <= ma75 or (rsi < 40 and close <= boll_1_5σ and volume_cond):
+        elif (close <= ma75 or (rsi < 40 and close <= boll_1_5sigma and volume_cond)):
             return "🟡 中度押し目"
-        elif close < ma25 * 0.98 and rsi < 45 and close <= boll_1σ and yield_pct > yield_avg_1y + 0.2:
+        elif (close < ma25 * 0.98 and rsi < 45 and close <= boll_1sigma and yield_pct > yield_avg_1y + 0.2):
             return "🟢 軽度押し目"
+
     elif symbol == 'TLT':
         if rate_latest and rate_latest > 4.5 and close < ma75:
             return "🔴 バーゲンレベル"
@@ -86,6 +101,7 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data, m
             return "🟡 中度押し目"
         elif rate_latest and rate_latest > 3.8:
             return "🟢 軽度押し目"
+
     return "⏸ 様子見"
     
 # --- 全体指標 ---
