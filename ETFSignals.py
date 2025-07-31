@@ -1,84 +1,106 @@
+import streamlit as st
+import pandas as pd
+import yfinance as yf
+
+st.set_page_config(page_title="ETF再投資判定", page_icon="📊")
+st.title("📊 ETF再投資判定ダッシュボード")
+
+symbols = {
+    'VYM': '高配当株ETF',
+    'JEPQ': 'ナスダック連動ETF',
+    'JEPI': 'カバードコールETF',
+    'TLT': '米国長期債ETF'
+}
+
+# === テクニカル指標関数 ===
+def compute_rsi(series, period=14):
+    delta = series.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.rolling(period).mean()
+    avg_loss = loss.rolling(period).mean()
+    rs = avg_gain / avg_loss
+    return 100 - (100 / (1 + rs))
+
+def compute_bollinger_bands(series, period=20, num_std=2):
+    sma = series.rolling(period).mean()
+    std = series.rolling(period).std()
+    return sma + (num_std * std), sma - (num_std * std)
+
+# === S&P500分配利回り取得 ===
+def get_sp500_yield():
+    try:
+        return round(yf.Ticker('SPY').info.get('dividendYield', 1.5), 2)
+    except:
+        return 1.5
+
+# === シグナル判定 ===
 def is_buy_signal(df, symbol, rate_latest, sp500_yield,
-                  rates_data, ma200_available,
                   vol_latest, vol_avg_20):
-
     latest = df.iloc[-1]
-
     close = latest['Close']
     rsi = latest['RSI']
     ma25 = latest.get('MA25')
     ma50 = latest.get('MA50')
     ma75 = latest.get('MA75')
-    ma200 = latest.get('MA200')
     boll_1sigma = latest.get('BB_lower_1sigma')
     boll_1_5sigma = latest.get('BB_lower_1_5sigma')
     boll_2sigma = latest.get('BB_lower_2sigma')
 
-    ma200_cond = close <= ma200 if (ma200_available and ma200 is not None) else False
-    deviation_pct = ((ma50 - close) / ma50) * 100 if ma50 else 0
-    cond_sp_vs_rate = sp500_yield > rate_latest if rate_latest else False
     volume_cond = (
         vol_latest > vol_avg_20 * 1.3
         if vol_latest is not None and vol_avg_20 is not None
         else False
     )
 
-    # 判定ロジック（分配利回りの条件を全除去）
-    if symbol == 'VYM':
-        if (close <= ma75 and rsi < 30 and close <= boll_2sigma):
-            return "🔴 バーゲンレベル"
-        elif (close <= ma75 or (rsi < 30 and close <= boll_1_5sigma)):
-            return "🟡 中度押し目"
-        elif (close < ma25 * 0.97 and rsi < 35 and close <= boll_1_5sigma):
-            return "🟢 軽度押し目"
+    # 判定ロジック（利回り条件なし）
+    if close <= ma75 and rsi < 30 and close <= boll_2sigma:
+        return "🔴 バーゲンレベル"
+    elif close <= ma75 or (rsi < 35 and close <= boll_1_5sigma):
+        return "🟡 中度押し目"
+    elif close < ma25 * 0.97 and rsi < 40 and close <= boll_1sigma and volume_cond:
+        return "🟢 軽度押し目"
+    else:
+        return "⏸ 様子見"
 
-    elif symbol == 'JEPQ':
-        if (close <= ma75 and rsi < 30 and close <= boll_2sigma):
-            return "🔴 バーゲンレベル"
-        elif (close <= ma75 or (rsi < 35 and close <= boll_1_5sigma)):
-            return "🟡 中度押し目"
-        elif (close < ma25 * 0.97 and rsi < 40 and close <= boll_1sigma and volume_cond):
-            return "🟢 軽度押し目"
+# === マクロ指標 ===
+vix_data = yf.download('^VIX', period='3mo', interval='1d')
+rates_data = yf.download('^TNX', period='3mo', interval='1d')
+rate_latest = float(rates_data['Close'].dropna().iloc[-1]) if not rates_data.empty else None
+sp500_yield = get_sp500_yield()
 
-    elif symbol == 'JEPI':
-        if (close <= ma75 and rsi < 30 and close <= boll_2sigma):
-            return "🔴 バーゲンレベル"
-        elif (close <= ma75 or (rsi < 40 and close <= boll_1_5sigma and volume_cond)):
-            return "🟡 中度押し目"
-        elif (close < ma25 * 0.98 and rsi < 45 and close <= boll_1sigma):
-            return "🟢 軽度押し目"
+st.markdown(
+    f"🧭 **マクロ指標まとめ**｜VIX指数: {round(vix_data['Close'].dropna().iloc[-1], 2)}｜"
+    f"10年債金利: {round(rate_latest, 2) if rate_latest else '取得不可'} %｜"
+    f"S&P500分配利回り: {sp500_yield} %"
+)
 
-    elif symbol == 'TLT':
-        if rate_latest and rate_latest > 4.5 and close < ma75:
-            return "🔴 バーゲンレベル"
-        elif rate_latest and rate_latest > 4.2:
-            return "🟡 中度押し目"
-        elif rate_latest and rate_latest > 3.8:
-            return "🟢 軽度押し目"
-
-    return "⏸ 様子見"
-
-
+# === ETFデータ一覧の構築 ===
 etf_summary = []
 
-for symbol in symbols:
+for symbol, name in symbols.items():
     etf = yf.Ticker(symbol)
-    df = etf.history(period='100d', interval='1d')  # 100日分でMA取得
+    df = etf.history(period='100d', interval='1d')
 
     if df.empty or len(df) < 50:
         continue
 
-    # 現在価格・前日終値
+    # 指標計算
     close_today = df['Close'].iloc[-1]
     close_prev = df['Close'].iloc[-2]
-
-    # RSI
     rsi_series = compute_rsi(df['Close'])
     rsi_today = round(rsi_series.iloc[-1], 2)
+    df['MA25'] = df['Close'].rolling(25).mean()
+    df['MA50'] = df['Close'].rolling(50).mean()
+    ma25 = round(df['MA25'].iloc[-1], 2)
+    ma50 = round(df['MA50'].iloc[-1], 2)
+    df['BB_upper_1sigma'], df['BB_lower_1sigma'] = compute_bollinger_bands(df['Close'], num_std=1)
+    df['BB_upper_1_5sigma'], df['BB_lower_1_5sigma'] = compute_bollinger_bands(df['Close'], num_std=1.5)
+    df['BB_upper_2sigma'], df['BB_lower_2sigma'] = compute_bollinger_bands(df['Close'], num_std=2)
 
-    # 移動平均
-    ma25 = round(df['Close'].rolling(25).mean().iloc[-1], 2)
-    ma50 = round(df['Close'].rolling(50).mean().iloc[-1], 2)
+    # 出来高処理
+    vol_latest = df['Volume'].iloc[-1]
+    vol_avg_20 = df['Volume'].rolling(20).mean().iloc[-1]
 
     # 分配金利回り
     try:
@@ -86,26 +108,22 @@ for symbol in symbols:
     except:
         yield_pct = None
 
-    # 出来高情報
-    vol_latest = df['Volume'].iloc[-1]
-    vol_avg_20 = df['Volume'].rolling(20).mean().iloc[-1]
-
-    # シグナル評価（省略ロジックで簡易表示）
+    # シグナル判定
     signal = is_buy_signal(df, symbol, rate_latest, sp500_yield,
-                           rates_data, len(df) >= 200,
                            vol_latest, vol_avg_20)
 
     etf_summary.append({
         "SYMBOL": symbol,
-        "名称": etf.info.get("shortName", "名称取得不可"),
+        "ETF名称": name,
         "現在価格": round(close_today, 2),
         "前日終値": round(close_prev, 2),
         "RSI": rsi_today,
         "MA25": ma25,
         "MA50": ma50,
-        "分配金利回り(%)": yield_pct if yield_pct else "—",
+        "分配利回り(%)": yield_pct if yield_pct else "—",
         "シグナル": signal
     })
 
-st.subheader("📋 ETFテクニカル・配当・判定一覧")
+# === 表示 ===
+st.subheader("📋 ETF投資判定一覧")
 st.dataframe(pd.DataFrame(etf_summary))
