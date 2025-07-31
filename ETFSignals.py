@@ -70,7 +70,7 @@ st.write(f"📰 **S&P500（SPY代用）分配金利回り**：{sp500_yield} %")
 for symbol in symbols.keys():
     st.subheader(f"🔎 {symbol}")
     etf = yf.Ticker(symbol)
-    df = etf.history(period='12mo', interval='1d')
+    df = etf.history(period='1y', interval='1d')
 
     if df.empty or 'Close' not in df.columns or df['Close'].dropna().empty:
         st.warning(f"{symbol} の価格データが取得できません。")
