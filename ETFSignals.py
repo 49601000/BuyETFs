@@ -133,8 +133,7 @@ for symbol, name in symbols.items():
         yield_pct = None
 
     # シグナル判定
-    signal = is_buy_signal(df, symbol, rate_latest, sp500_yield,
-                           vol_latest, vol_avg_20)
+    signal = is_buy_signal(df, symbol, rate_latest, sp500_yield, vol_latest, vol_avg_20)
 
     etf_summary.append({
         "SYMBOL": symbol,
