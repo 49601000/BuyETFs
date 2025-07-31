@@ -51,8 +51,9 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data,
     boll_1sigma = latest.get('BB_lower_1sigma')
     boll_1_5sigma = latest.get('BB_lower_1_5sigma')
     boll_2sigma = latest.get('BB_lower_2sigma')
-    vol_latest = df['Volume'].iloc[-1]
-    vol_avg_20 = df['Volume'].rolling(20).mean().iloc[-1]
+    vol_latest = df['Volume'].iloc[-1] if 'Volume' in df.columns and not df['Volume'].empty else None
+    vol_avg_20 = df['Volume'].rolling(20).mean().iloc[-1] if 'Volume' in df.columns and len(df['Volume'].dropna()) >= 20 else None
+
 
     # 安全な条件構築（Noneチェック）
     ma200_cond = close <= ma200 if (ma200_available and ma200 is not None) else False
