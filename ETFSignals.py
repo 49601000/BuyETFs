@@ -40,8 +40,12 @@ def rate_spike_recent(rates_df):
     except:
         return False
 
-def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data,
-                  ma200_available, yield_avg_1y, vol_latest, vol_avg_20):
+def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield,
+                  rates_data, ma200_available, yield_avg_1y,
+                  vol_latest, vol_avg_20):
+
+    latest = df.iloc[-1]
+
     close = latest['Close']
     rsi = latest['RSI']
     ma25 = latest.get('MA25')
@@ -51,19 +55,18 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data,
     boll_1sigma = latest.get('BB_lower_1sigma')
     boll_1_5sigma = latest.get('BB_lower_1_5sigma')
     boll_2sigma = latest.get('BB_lower_2sigma')
-    vol_latest = df['Volume'].iloc[-1] if 'Volume' in df.columns and not df['Volume'].empty else None
-    vol_avg_20 = df['Volume'].rolling(20).mean().iloc[-1] if 'Volume' in df.columns and len(df['Volume'].dropna()) >= 20 else None
 
-
-    # 安全な条件構築（Noneチェック）
     ma200_cond = close <= ma200 if (ma200_available and ma200 is not None) else False
     deviation_pct = ((ma50 - close) / ma50) * 100 if ma50 else 0
-    cond_sp_vs_rate = sp500_yield > rate_latest if rate_latest else Falsevolume_cond = (
-    vol_latest > vol_avg_20 * 1.3
-    if vol_latest is not None and vol_avg_20 is not None
-    else False
-)
-    # ETFごとの判定ロジック
+    cond_sp_vs_rate = sp500_yield > rate_latest if rate_latest else False
+
+    volume_cond = (
+        vol_latest > vol_avg_20 * 1.3
+        if vol_latest is not None and vol_avg_20 is not None
+        else False
+    )
+
+    # 判定ロジック
     if symbol == 'VYM':
         if (close <= ma75 and rsi < 30 and close <= boll_2sigma and yield_pct > yield_avg_1y + 0.5):
             return "🔴 バーゲンレベル"
@@ -97,26 +100,20 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data,
             return "🟢 軽度押し目"
 
     return "⏸ 様子見"
-    
-# --- 全体指標 ---
-#マクロ要因
+
+# --- 全体指標表示 ---
 vix_latest = float(vix_data['Close'].dropna().iloc[-1])
-#S&P500
 sp500_yield = get_sp500_yield()
 
-#表示用
 st.markdown(
     f"🧭 **マクロ指標まとめ**｜VIX指数: {round(vix_latest, 2)}｜10年債金利: {round(rate_latest, 2)} %｜S&P500分配利回り: {sp500_yield} %"
 )
 
-
-# --- メインループ ---
-from utils import calculate_yield_avg_1y  # インポートはループ外で行うのが普通
+from utils import calculate_yield_avg_1y  # 外部モジュール
 
 for symbol in symbols:
     yield_avg_1y = calculate_yield_avg_1y(symbol)
-    # ここに何らかのロジックを書く（例：結果を保存・シグナル判定など）
-    
+
     st.subheader(f"🔎 {symbol}")
     etf = yf.Ticker(symbol)
     df = etf.history(period='1y', interval='1d')
@@ -126,31 +123,29 @@ for symbol in symbols:
         continue
 
     df['RSI'] = compute_rsi(df['Close'])
-    df['UpperBand'], df['LowerBand'] = compute_bollinger_bands(df['Close'])
-    df['MA20'] = df['Close'].rolling(20).mean()
+    df['BB_upper_1sigma'], df['BB_lower_1sigma'] = compute_bollinger_bands(df['Close'], num_std=1)
+    df['BB_upper_1_5sigma'], df['BB_lower_1_5sigma'] = compute_bollinger_bands(df['Close'], num_std=1.5)
+    df['BB_upper_2sigma'], df['BB_lower_2sigma'] = compute_bollinger_bands(df['Close'], num_std=2)
+    df['MA25'] = df['Close'].rolling(25).mean()
     df['MA50'] = df['Close'].rolling(50).mean()
+    df['MA75'] = df['Close'].rolling(75).mean()
+    df['MA200'] = df['Close'].rolling(200).mean() if len(df) >= 200 else None
     ma200_available = len(df) >= 200
-    if ma200_available:
-        df['MA200'] = df['Close'].rolling(200).mean()
 
-    try:
-        drop_cols = ['RSI', 'UpperBand', 'LowerBand', 'MA20', 'MA50']
-        if ma200_available:
-            drop_cols.append('MA200')
-        df = df.dropna(subset=drop_cols)
-        if df.empty:
-            st.warning(f"{symbol}: 有効データ行が存在しません。")
-            continue
-    except KeyError as e:
-        st.error(f"{symbol}: dropnaエラー: {e}")
+    drop_cols = ['RSI', 'MA25', 'MA50', 'MA75', 'BB_lower_1sigma', 'BB_lower_1_5sigma', 'BB_lower_2sigma']
+    if ma200_available:
+        drop_cols.append('MA200')
+    df = df.dropna(subset=drop_cols)
+    if df.empty:
+        st.warning(f"{symbol}: 有効なデータ行が存在しません。")
         continue
 
     latest = df.iloc[-1]
     price = latest['Close']
     rsi = latest['RSI']
     bb_status = (
-        "上抜け（買われ過ぎ）" if price > latest['UpperBand'] else
-        "下抜け（売られ過ぎ）" if price < latest['LowerBand'] else
+        "上抜け（買われ過ぎ）" if price > latest['BB_upper_1sigma'] else
+        "下抜け（売られ過ぎ）" if price < latest['BB_lower_1sigma'] else
         "バンド内"
     )
 
@@ -159,6 +154,8 @@ for symbol in symbols:
     except:
         yield_pct = None
 
+    vol_latest = df['Volume'].iloc[-1] if 'Volume' in df.columns and not df['Volume'].empty else None
+    vol_avg_20 = df['Volume'].rolling(20).mean().iloc[-1] if 'Volume' in df.columns and len(df['Volume'].dropna()) >= 20 else None
     if yield_pct:
         st.write(f"📎 分配金利回り：{yield_pct} %")
     else:
