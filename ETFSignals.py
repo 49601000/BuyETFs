@@ -119,7 +119,8 @@ st.markdown(
 
 # --- メインループ ---
 for symbol in symbols.keys():
-    # 関数を呼び出す
+
+# 関数を呼び出す(確認用利回り算出)
 from utils import calculate_yield_avg_1y
 
 yield_avg_1y = calculate_yield_avg_1y(symbols)
