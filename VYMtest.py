@@ -1,35 +1,21 @@
-import streamlit as st
-import yfinance as yf
-import pandas as pd
+# 値が存在し、数値かどうかチェックしてから表示
+if latest is not None:
+    close_val = latest.get('Close', None)
+    rsi_val = latest.get('RSI', None)
+    ma200_val = latest.get('MA200', None)
 
-st.set_page_config(page_title="VYMチェック", page_icon="📈")
-st.title("📈 VYM価格・RSI・200日移動平均")
-
-# データ取得
-df = yf.download('VYM', period='1y', interval='1d')
-
-if df.empty or 'Close' not in df.columns:
-    st.error("VYMの価格データが取得できませんでした。")
-else:
-    # RSI & MA200を計算
-    df['RSI'] = 100 - 100 / (1 + df['Close'].diff().clip(lower=0).rolling(14).mean() / -df['Close'].diff().clip(upper=0).rolling(14).mean())
-    df['MA200'] = df['Close'].rolling(200).mean()
-
-    latest_index = None
-
-    # 両方とも列が存在し、NaN以外があるか確認
-    if 'RSI' in df.columns and 'MA200' in df.columns:
-        valid_df = df[['Close', 'RSI', 'MA200']].dropna()
-        if not valid_df.empty:
-            latest_index = valid_df.index[-1]
+    if isinstance(close_val, (int, float)) and pd.notna(close_val):
+        st.write(f"💰 **現在の価格**: {close_val:.2f} USD")
     else:
-        st.warning("RSIまたはMA200の列が存在しません。")
+        st.warning("現在価格が有効な数値ではありません。")
 
-    # 指標表示
-    if latest_index:
-        latest = df.loc[latest_index]
-        st.write(f"💰 **現在の価格**: {latest['Close']:.2f} USD")
-        st.write(f"📊 **RSI**: {latest['RSI']:.2f}")
-        st.write(f"📉 **200日移動平均**: {latest['MA200']:.2f}")
+    if isinstance(rsi_val, (int, float)) and pd.notna(rsi_val):
+        st.write(f"📊 **RSI (14日)**: {rsi_val:.2f}")
     else:
-        st.warning("有効なRSIとMA200が計算されている行がまだ存在しないようです。期間が短すぎるかも？")
+        st.warning("RSIが有効な数値ではありません。")
+
+    if isinstance(ma200_val, (int, float)) and pd.notna(ma200_val):
+        st.write(f"📉 **200日移動平均**: {ma200_val:.2f}")
+    else:
+        st.warning("200日移動平均が有効な数値ではありません。")
+        
