@@ -35,6 +35,13 @@ def get_vix_data():
         st.warning(f"VIXデータの取得に失敗しました: {e}")
         return pd.DataFrame()
 
+# 10年債利回り (^TNX) の取得
+def get_rates_data():
+    try:
+        return yf.download("^TNX", period="3mo", interval="1d")
+    except Exception as e:
+        st.warning(f"10年債金利データの取得に失敗しました: {e}")
+        return pd.DataFrame()
 
 # === S&P500分配利回り取得 ===
 def get_sp500_yield():
@@ -77,6 +84,7 @@ def is_buy_signal(df, symbol, rate_latest, sp500_yield,
 vix_data = get_vix_data()
 vix_latest = round(vix_data['Close'].dropna().iloc[-1], 2)
 # 10年債金利（^TNX）の最新値をfloat型で抽出
+rates_data = get_rates_data()
 rate_latest = round(rates_data['Close'].dropna().iloc[-1], 2) if not rates_data.empty else None
 # S&P500配当利回り
 sp500_yield = get_sp500_yield()
