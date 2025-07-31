@@ -192,9 +192,6 @@ for symbol, name in symbols.items():
     df['MA25'] = df['Close'].rolling(25).mean()
     df['MA50'] = df['Close'].rolling(50).mean()
     df['MA75'] = df['Close'].rolling(75).mean()
-    price_info = max_buy_price(df, symbol)
-    buy_cap = select_price_by_signal(signal, price_info)
-
     # MAの最新値（任意で使う場合）
     ma25 = round(df['MA25'].iloc[-1], 2)
     ma50 = round(df['MA50'].iloc[-1], 2)
