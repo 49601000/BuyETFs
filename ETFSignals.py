@@ -62,7 +62,12 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data, m
 
     return '🔔 押し目買いチャンス' if cond else '⏸ 様子見'
 
-# --- S&P500利回り表示 ---
+# --- 全体指標 ---
+#マクロ要因
+st.write(f"📰 **VIX指数**：{vix_data}")
+st.write(f"📰 **10年債金利**：{rate_latest} bps")
+
+#S&P500
 sp500_yield = get_sp500_yield()
 st.write(f"📰 **S&P500（SPY代用）分配金利回り**：{sp500_yield} %")
 
