@@ -17,8 +17,7 @@ else:
     loss = -delta.clip(upper=0)
     rs = avg_gain / avg_loss
     df['RSI'] = 100 - (100 / (1 + rs))
-    df['MA50'] = close.rolling(50).mean()
-    df_valid = df[['Close', 'RSI', 'MA50']].dropna()
+    df_valid = df[['Close', 'RSI'].dropna()
 
     if df_valid.empty:
         st.warning("有効なRSIやMA50データがまだ揃っていません。もう少し長めの期間を指定すると改善するかもしれません。")
