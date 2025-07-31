@@ -5,7 +5,6 @@ import pandas as pd
 st.set_page_config(page_title="AAPLシンプル指標", page_icon="🍏")
 st.title("🍏 AAPL：現在価格・RSI")
 
-# データ取得
 df = yf.download('AAPL', period='2mo', interval='1d')
 
 if df.empty or 'Close' not in df.columns:
@@ -13,7 +12,6 @@ if df.empty or 'Close' not in df.columns:
 else:
     close = df['Close']
 
-    # RSI計算（14日）
     delta = close.diff()
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
@@ -23,11 +21,12 @@ else:
     rs = avg_gain / avg_loss
     rsi = 100 - (100 / (1 + rs))
 
-    # 最新データのみ取得
-    latest_close = close.dropna().iloc[-1] if not close.dropna().empty else None
-    latest_rsi = rsi.dropna().iloc[-1] if not rsi.dropna().empty else None
+    # 最新値取得
+    valid_close = close.dropna()
+    valid_rsi = rsi.dropna()
+    latest_close = valid_close.iloc[-1] if not valid_close.empty else None
+    latest_rsi = valid_rsi.iloc[-1] if not valid_rsi.empty else None
 
-    # NaNやNoneチェック
     if latest_close is None or pd.isna(latest_close):
         st.error("現在の価格データが取得できませんでした。")
     else:
