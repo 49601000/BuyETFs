@@ -42,7 +42,7 @@ def get_dividend_yield(symbol):
     try:
         dy = yf.Ticker(symbol).info.get('dividendYield')
         if dy is not None:
-            return round(dy * 100, 2)
+            return round(dy, 2)
     except Exception as e:
         print(f"利回り取得エラー: {e}")
     return None
@@ -51,7 +51,7 @@ def get_sp500_yield():
     try:
         dy = yf.Ticker('SPY').info.get('dividendYield')
         if dy is not None:
-            return round(dy * 100, 2)
+            return round(dy, 2)
     except Exception as e:
         print(f"SPY利回り取得エラー: {e}")
     return 1.5
@@ -107,7 +107,7 @@ st.write(f"📰 **S&P500（SPY代用）分配金利回り**：{sp500_yield} %")
 # --- メイン処理 ---
 for symbol in symbols.keys():
     st.subheader(f"🔎 {symbol}")
-    df = yf.download(symbol, period='6mo', interval='1d')
+    df = yf.download(symbol, period='12mo', interval='1d')
 
     if df.empty or 'Close' not in df.columns or df['Close'].dropna().empty:
         st.warning(f"{symbol} の価格データが取得できませんでした。")
