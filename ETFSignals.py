@@ -64,8 +64,8 @@ def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data, m
 
 # --- 全体指標 ---
 #マクロ要因
-vix_latest = vix_data['Close'].dropna().iloc[-1]
-st.write(f"📰 **VIX指数（直近）**：{round(vix_latest, 2)}")
+vix_latest = float(vix_data['Close'].dropna().iloc[-1])
+st.write(f"📰 VIX指数（直近）: {round(vix_latest, 2)}")
 st.write(f"📰 **10年債金利（TNX）**：{round(rate_latest, 2)} %")
 
 #S&P500
