@@ -13,14 +13,15 @@ def calculate_rsi(data, period=14):
     return rsi
 
 # Streamlit UI
-st.title("ETF RSI Dashboard")
+st.set_page_config(page_title="ETF再投資判定", page_icon="📊")
+st.title("📊 ETF再投資判定")
 
 # ユーザーからティッカー入力
-ticker = st.text_input("ETFティッカーを入力", "SPY")
+symbols = {'VYM': 'NYSE', 'JEPQ': 'NASDAQ', 'JEPI': 'NYSE', 'TLT': 'NYSE'}
 
 # データ取得と処理
 if ticker:
-    etf = yf.Ticker(ticker)
+    etf = yf.Ticker(symbols)
     df = etf.history(period="3mo", interval="1d")
     df['RSI'] = calculate_rsi(df)
 
