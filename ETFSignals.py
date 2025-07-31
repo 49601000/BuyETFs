@@ -103,15 +103,8 @@ for symbol in symbols.keys():
 
     df = yf.download(symbol, period='6mo', interval='1d')
 
-    # ✅ 基本チェック
-    if df.empty:
-        st.error(f"{symbol} の株価データが取得できませんでした。")
-        continue
-    if 'Close' not in df.columns:
-        st.error(f"{symbol} に Close カラムが存在しません。")
-        continue
-    if df['Close'].dropna().empty:
-        st.warning(f"{symbol} の Close データが全て欠損しています。")
+    if df.empty or 'Close' not in df.columns or df['Close'].dropna().empty:
+        st.warning(f"{symbol} の有効な価格データが取得できませんでした。")
         continue
 
     # --- 指標計算 ---
@@ -121,17 +114,20 @@ for symbol in symbols.keys():
     df['MA50'] = df['Close'].rolling(50).mean()
     df['MA200'] = df['Close'].rolling(200).mean()
 
-    df.dropna(subset=['RSI', 'UpperBand', 'LowerBand', 'MA20', 'MA50', 'MA200'], inplace=True)
+    required_cols = ['RSI', 'UpperBand', 'LowerBand', 'MA20', 'MA50', 'MA200']
+    if not all(col in df.columns for col in required_cols):
+        st.warning(f"{symbol} の指標列が不足しています。")
+        continue
+
+    df = df.dropna(subset=required_cols)
     if df.empty:
         st.warning(f"{symbol} の有効な指標データが取得できませんでした。")
         continue
 
-    # 最新値取得
     latest = df.iloc[-1]
     price = latest['Close']
     rsi = latest['RSI']
 
-    # --- BB判定 ---
     if price > latest['UpperBand']:
         bb_status = "上抜け（買われ過ぎ）"
     elif price < latest['LowerBand']:
@@ -139,14 +135,12 @@ for symbol in symbols.keys():
     else:
         bb_status = "バンド内"
 
-    # 分配利回り取得
     yield_pct = get_dividend_yield(symbol)
     if yield_pct:
         st.write(f"**分配金利回り**：{yield_pct} %")
     else:
         st.warning("分配金利回りを取得できませんでした。")
 
-    # --- 指標表示 ---
     st.write(f"📌 Close価格：{round(price,2)}")
     st.write(f"📈 20日移動平均：{round(latest['MA20'],2)}")
     st.write(f"📉 50日移動平均：{round(latest['MA50'],2)}")
@@ -154,6 +148,5 @@ for symbol in symbols.keys():
     st.write(f"📊 RSI：{round(rsi,2)}")
     st.write(f"📊 ボリンジャーバンド判定：**{bb_status}**")
 
-    # --- 判定結果表示 ---
     signal = is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data)
     st.markdown(f"### 判定結果：{signal}")
