@@ -41,18 +41,7 @@ def rate_spike_recent(rates_df):
         return False
 
 
-def is_buy_signal(
-    df,
-    symbols,
-    rate_latest,
-    yield_pct,
-    sp500_yield,
-    rates_data,
-    ma200_available,
-    vol_avg_20=None,
-    vol_latest=None,
-    yield_avg_1y=None
-):
+def is_buy_signal(df, symbol, rate_latest, yield_pct, sp500_yield, rates_data, ma200_available, yield_avg_1y):
     latest = df.iloc[-1]
     close = latest['Close']
     rsi = latest['RSI']
